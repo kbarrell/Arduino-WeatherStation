@@ -98,7 +98,11 @@ class CborMapData {
     MapEntry<String> base_name;
     MapEntry<double> base_time;
     MapEntry<String> name;
+    MapEntry<int>    name_identifier;
+    MapEntry<bool>   light_payload;
     MapEntry<String> attribute_name;
+    MapEntry<int>    attribute_identifier;
+    MapEntry<int>    property_identifier;
     MapEntry<float>  val;
     MapEntry<String> str_val;
     MapEntry<bool>   bool_val;
@@ -118,6 +122,7 @@ enum class UpdatePolicy {
 };
 
 typedef void(*UpdateCallbackFunc)(void);
+typedef unsigned long(*GetTimeCallbackFunc)();
 
 /******************************************************************************
    CLASS DECLARATION
@@ -127,7 +132,7 @@ class ArduinoCloudProperty {
     typedef void(*SyncCallbackFunc)(ArduinoCloudProperty &property);
   public:
     ArduinoCloudProperty();
-    void init(String const name, Permission const permission);
+    void init(String const name, Permission const permission, GetTimeCallbackFunc func);
 
     /* Composable configuration of the ArduinoCloudProperty class */
     ArduinoCloudProperty & onUpdate(UpdateCallbackFunc func);
@@ -137,6 +142,9 @@ class ArduinoCloudProperty {
 
     inline String name() const {
       return _name;
+    }
+    inline int identifier() const {
+      return _identifier;
     }
     inline bool   isReadableByCloud() const {
       return (_permission == Permission::Read) || (_permission == Permission::ReadWrite);
@@ -152,9 +160,10 @@ class ArduinoCloudProperty {
     void setLastLocalChangeTimestamp(unsigned long localChangeTime);
     unsigned long getLastCloudChangeTimestamp();
     unsigned long getLastLocalChangeTimestamp();
+    void setIdentifier(int identifier);
 
     void updateLocalTimestamp();
-    void append(CborEncoder * encoder);
+    void append(CborEncoder * encoder, bool lightPayload);
     void appendAttributeReal(bool value, String attributeName = "", CborEncoder *encoder = nullptr);
     void appendAttributeReal(int value, String attributeName = "", CborEncoder *encoder = nullptr);
     void appendAttributeReal(float value, String attributeName = "", CborEncoder *encoder = nullptr);
@@ -184,6 +193,7 @@ class ArduinoCloudProperty {
 
   private:
     Permission         _permission;
+    GetTimeCallbackFunc _get_time_func;
     UpdateCallbackFunc _update_callback_func;
     void (*_sync_callback_func)(ArduinoCloudProperty &property);
 
@@ -197,6 +207,11 @@ class ArduinoCloudProperty {
     unsigned long      _last_local_change_timestamp;
     unsigned long      _last_cloud_change_timestamp;
     LinkedList<CborMapData *> * _map_data_list;
+    /* Store the identifier of the property in the array list */
+    int                _identifier;
+    int                _attributeIdentifier;
+    /* Indicates if the property shall be encoded using the identifier instead of the name */
+    bool               _lightPayload;
 };
 
 /******************************************************************************
