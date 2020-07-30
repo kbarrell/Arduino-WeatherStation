@@ -15,15 +15,15 @@ void setup() {
   Serial.println("cactus.io | Weather Station DS18B20, BMEA280 Sensor Test");
   Serial.println("DS Temp\t\tBME Temp\tHumidity\t\tPressure");
 
-  if (!bme.begin())  {
-    Serial.println("Could not find BME280 sensor -  check wiring");
-    while (1);
-  }
+ // if (!bme.begin())  {
+ //   Serial.println("Could not find BME280 sensor -  check wiring");
+ //   while (1);
+//  }
 }
 
 void loop() {
   ds.readSensor();
-  bme.readSensor();
+ // bme.readSensor();
 
   Serial.print(ds.getTemperature_C()); Serial.print(" *C\t");
   Serial.print(bme.getTemperature_C()); Serial.print(" *C\t");
