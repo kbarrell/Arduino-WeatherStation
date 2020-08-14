@@ -5,7 +5,7 @@
 #define TX_Pin 8  // used to indicate web data tx
 
 #define WindSensor_Pin (2)       //The pin location of the anemometer sensor
-#define WindVane_Pin  (A2)       // The pin connecting to the wind vane sensor
+#define WindVane_Pin  (A3)       // The pin connecting to the wind vane sensor
 #define VaneOffset  0		   // The anemometer offset from magnetic north
 
 
