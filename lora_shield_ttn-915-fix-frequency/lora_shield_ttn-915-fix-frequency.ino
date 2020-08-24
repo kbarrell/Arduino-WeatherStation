@@ -1,8 +1,8 @@
-#include <arduino_lmic.h>
-#include <arduino_lmic_hal_boards.h>
-#include <arduino_lmic_hal_configuration.h>
-#include <arduino_lmic_lorawan_compliance.h>
-#include <arduino_lmic_user_configuration.h>
+//#include <arduino_lmic.h>
+//#include <arduino_lmic_hal_boards.h>
+//#include <arduino_lmic_hal_configuration.h>
+//#include <arduino_lmic_lorawan_compliance.h>
+//#include <arduino_lmic_user_configuration.h>
 #include <lmic.h>
 
 /*******************************************************************************
@@ -43,7 +43,7 @@ static const PROGMEM u1_t NWKSKEY[16] = { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0x
 // This is the default Semtech key, which is used by the prototype TTN
 // network initially.
 // static const u1_t PROGMEM APPSKEY[16] = { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6, 0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF, 0x4F, 0x3C };
-statis const u1_t PROGMEM APPSKEY[16] = { 0xE7, 0xF1, 0x72, 0x5A, 0x90, 0xCB, 0x41, 0x87, 0xA7, 0x4F, 0xBC, 0x90, 0x73, 0x83, 0xD9, 0x70 };
+static const u1_t PROGMEM APPSKEY[16] = { 0xE7, 0xF1, 0x72, 0x5A, 0x90, 0xCB, 0x41, 0x87, 0xA7, 0x4F, 0xBC, 0x90, 0x73, 0x83, 0xD9, 0x70 };
 
 // LoRaWAN end-device address (DevAddr)
 // See http://thethingsnetwork.org/wiki/AddressSpace
