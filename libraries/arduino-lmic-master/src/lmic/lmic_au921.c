@@ -147,13 +147,14 @@ void  LMIC_enableSubBand(u1_t band) {
 
         // there's a single 500 kHz channel associated with
         // each group of 8 125 kHz channels. Enable it, too.
-       // LMIC_enableChannel(64 + band);
-	   LMIC_disableChannel(64 + band);      //    Disable for single channel gateway
+            LMIC_enableChannel(64 + band);
+	   // LMIC_disableChannel(64 + band);      //    Disable for single channel gateway
 }
 void  LMIC_disableSubBand(u1_t band) {
         ASSERT(band < 8);
         u1_t start = band * 8;
         u1_t end = start + 8;
+
 
         // disable all eight 125 kHz channels in this subband
         for (int channel = start; channel < end; ++channel)
