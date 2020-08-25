@@ -1,42 +1,51 @@
-/*******************************************************************************
- * Copyright (c) 2014-2015 IBM Corporation.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+/*
+ * Copyright (c) 2014-2016 IBM Corporation.
+ * Copyright (c) 2018 MCCI Corporation
+ * All rights reserved.
  *
- * Contributors:
- *    IBM Zurich Research Lab - initial API, implementation and documentation
- *******************************************************************************/
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *  * Neither the name of the <organization> nor the
+ *    names of its contributors may be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 //! \file
 #ifndef _oslmic_h_
 #define _oslmic_h_
 
-// Dependencies required for the LoRa MAC in C to run.
+// Dependencies required for the LMIC to run.
 // These settings can be adapted to the underlying system.
-// You should not, however, change the lmic.[hc]
+// You should not, however, change the lmic merely for porting purposes.[hc]
 
 #include "config.h"
-#include <stdint.h>
-#include <stdio.h>
 
-#ifdef __cplusplus
-extern "C"{
+#ifndef _lmic_env_h_
+# include "lmic_env.h"
 #endif
 
-//================================================================================
-//================================================================================
-// Target platform as C library
-typedef uint8_t            bit_t;
-typedef uint8_t            u1_t;
-typedef int8_t             s1_t;
-typedef uint16_t           u2_t;
-typedef int16_t            s2_t;
-typedef uint32_t           u4_t;
-typedef int32_t            s4_t;
-typedef unsigned int       uint;
-typedef const char* str_t;
+#ifndef _oslmic_types_h_
+# include "oslmic_types.h"
+#endif
+
+LMIC_BEGIN_DECLS
+
 
 #include <string.h>
 #include "hal.h"
@@ -58,6 +67,15 @@ typedef   struct rxsched_t rxsched_t;
 typedef   struct bcninfo_t bcninfo_t;
 typedef        const u1_t* xref2cu1_t;
 typedef              u1_t* xref2u1_t;
+
+// int32_t == s4_t is long on some platforms; and someday
+// we will want 64-bit ostime_t. So, we will use a macro for the
+// print formatting of ostime_t.
+#ifndef LMIC_PRId_ostime_t
+# include <inttypes.h>
+# define LMIC_PRId_ostime_t	PRId32
+#endif
+
 #define TYPEDEF_xref2rps_t     typedef         rps_t* xref2rps_t
 #define TYPEDEF_xref2rxsched_t typedef     rxsched_t* xref2rxsched_t
 #define TYPEDEF_xref2chnldef_t typedef     chnldef_t* xref2chnldef_t
@@ -81,11 +99,24 @@ u1_t radio_rand1 (void);
 #define DEFINE_LMIC  struct lmic_t LMIC
 #define DECLARE_LMIC extern struct lmic_t LMIC
 
-void radio_init (void);
+typedef struct oslmic_radio_rssi_s oslmic_radio_rssi_t;
+
+struct oslmic_radio_rssi_s {
+        s2_t    min_rssi;
+        s2_t    max_rssi;
+        s2_t    mean_rssi;
+        u2_t    n_rssi;
+};
+
+int radio_init (void);
 void radio_irq_handler (u1_t dio);
+void radio_irq_handler_v2 (u1_t dio, ostime_t tref);
 void os_init (void);
+int os_init_ex (const void *pPinMap);
 void os_runloop (void);
 void os_runloop_once (void);
+u1_t radio_rssi (void);
+void radio_monitor_rssi(ostime_t n, oslmic_radio_rssi_t *pRssi);
 
 //================================================================================
 
@@ -102,8 +133,6 @@ void os_runloop_once (void);
 #elif OSTICKS_PER_SEC < 10000 || OSTICKS_PER_SEC > 64516
 #error Illegal OSTICKS_PER_SEC - must be in range [10000:64516]. One tick must be 15.5us .. 100us long.
 #endif
-
-typedef s4_t  ostime_t;
 
 #if !HAS_ostick_conv
 #define us2osticks(us)   ((ostime_t)( ((int64_t)(us) * OSTICKS_PER_SEC) / 1000000))
@@ -192,7 +221,7 @@ void os_wlsbf2 (xref2u1_t buf, u2_t value);
 #define os_getRndU2() ((u2_t)((os_getRndU1()<<8)|os_getRndU1()))
 #endif
 #ifndef os_crc16
-u2_t os_crc16 (xref2u1_t d, uint len);
+u2_t os_crc16 (xref2cu1_t d, uint len);
 #endif
 
 #endif // !HAS_os_calls
@@ -210,6 +239,9 @@ u2_t os_crc16 (xref2u1_t d, uint len);
 
 // Helper to add a prefix to the table name
 #define RESOLVE_TABLE(table) constant_table_ ## table
+
+// get number of entries in table
+#define LENOF_TABLE(table) (sizeof(RESOLVE_TABLE(table)) / sizeof(RESOLVE_TABLE(table)[0]))
 
 // Accessors for table elements
 #define TABLE_GET_U1(table, index) table_get_u1(RESOLVE_TABLE(table), index)
@@ -246,20 +278,17 @@ u2_t os_crc16 (xref2u1_t d, uint len);
 
     // For AVR, store constants in PROGMEM, saving on RAM usage
     #define CONST_TABLE(type, name) const type PROGMEM RESOLVE_TABLE(name)
-
-    #define lmic_printf(fmt, ...) printf_P(PSTR(fmt), ## __VA_ARGS__)
 #else
-    inline u1_t table_get_u1(const u1_t *table, size_t index) { return table[index]; }
-    inline s1_t table_get_s1(const s1_t *table, size_t index) { return table[index]; }
-    inline u2_t table_get_u2(const u2_t *table, size_t index) { return table[index]; }
-    inline s2_t table_get_s2(const s2_t *table, size_t index) { return table[index]; }
-    inline u4_t table_get_u4(const u4_t *table, size_t index) { return table[index]; }
-    inline s4_t table_get_s4(const s4_t *table, size_t index) { return table[index]; }
-    inline ostime_t table_get_ostime(const ostime_t *table, size_t index) { return table[index]; }
+    static inline u1_t table_get_u1(const u1_t *table, size_t index) { return table[index]; }
+    static inline s1_t table_get_s1(const s1_t *table, size_t index) { return table[index]; }
+    static inline u2_t table_get_u2(const u2_t *table, size_t index) { return table[index]; }
+    static inline s2_t table_get_s2(const s2_t *table, size_t index) { return table[index]; }
+    static inline u4_t table_get_u4(const u4_t *table, size_t index) { return table[index]; }
+    static inline s4_t table_get_s4(const s4_t *table, size_t index) { return table[index]; }
+    static inline ostime_t table_get_ostime(const ostime_t *table, size_t index) { return table[index]; }
 
     // Declare a table
     #define CONST_TABLE(type, name) const type RESOLVE_TABLE(name)
-    #define lmic_printf printf
 #endif
 
 // ======================================================================
@@ -281,8 +310,6 @@ extern xref2u1_t AESaux;
 u4_t os_aes (u1_t mode, xref2u1_t buf, u2_t len);
 #endif
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+LMIC_END_DECLS
 
 #endif // _oslmic_h_
