@@ -42,12 +42,12 @@ static const PROGMEM u1_t NWKSKEY[16] = { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0x
 // LoRaWAN AppSKey, application session key
 // This is the default Semtech key, which is used by the prototype TTN
 // network initially.
-// static const u1_t PROGMEM APPSKEY[16] = { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6, 0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF, 0x4F, 0x3C };
-static const u1_t PROGMEM APPSKEY[16] = { 0xE7, 0xF1, 0x72, 0x5A, 0x90, 0xCB, 0x41, 0x87, 0xA7, 0x4F, 0xBC, 0x90, 0x73, 0x83, 0xD9, 0x70 };
+static const u1_t PROGMEM APPSKEY[16] = { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6, 0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF, 0x4F, 0x3C };
+// static const u1_t PROGMEM APPSKEY[16] = { 0xE7, 0xF1, 0x72, 0x5A, 0x90, 0xCB, 0x41, 0x87, 0xA7, 0x4F, 0xBC, 0x90, 0x73, 0x83, 0xD9, 0x70 };   // AppKey
 
 // LoRaWAN end-device address (DevAddr)
 // See http://thethingsnetwork.org/wiki/AddressSpace
-static const u4_t DEVADDR = 0x57696e01 ; // <-- Change this address for every node!  = Win01
+static const u4_t DEVADDR = 0x57696e01 ; // <-- Change this address for every node!    
 
 // These callbacks are only used in over-the-air activation, so they are
 // left empty here (we cannot leave them out completely unless
@@ -63,7 +63,7 @@ static osjob_t sendjob;
 // cycle limitations).
 const unsigned TX_INTERVAL = 60;
 
-// Pin mapping
+// Pin mapping  
 const lmic_pinmap lmic_pins = {
     .nss = 10,
     .rxtx = LMIC_UNUSED_PIN,
@@ -152,6 +152,7 @@ void do_send(osjob_t* j){
 void setup() {
     Serial.begin(115200);
     Serial.println(F("Starting"));
+	Serial.println(LMIC.freq);
 
     #ifdef VCC_ENABLE
     // For Pinoccio Scout boards
