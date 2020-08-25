@@ -140,11 +140,15 @@ void  LMIC_enableSubBand(u1_t band) {
 
         // enable all eight 125 kHz channels in this subband
         for (int channel = start; channel < end; ++channel)
-                LMIC_enableChannel(channel);
+//				Hack for Dragino LG01-N Single Channel -  disable all but that channel
+//               LMIC_enableChannel(channel);
+					LMIC_disableChannel(channel);    
+			LMIC_enableChannel(8);		//  For LG01-N ooperating at 916.8mHz = Channel 8
 
         // there's a single 500 kHz channel associated with
         // each group of 8 125 kHz channels. Enable it, too.
-        LMIC_enableChannel(64 + band);
+       // LMIC_enableChannel(64 + band);
+	   LMIC_disableChannel(64 + band);      //    Disable for single channel gateway
 }
 void  LMIC_disableSubBand(u1_t band) {
         ASSERT(band < 8);

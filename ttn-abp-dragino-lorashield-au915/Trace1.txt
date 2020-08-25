@@ -1,0 +1,69 @@
+StaStarting
+15:16:06.883 -> Loading AU915/AU921 Configuration...
+15:16:06.883 -> 6911: EV_TXSTART
+15:16:06.883 -> Packet queued
+15:16:06.883 -> Sending packet on frequency: 917400000
+15:16:10.790 -> 250964: EV_TXCOMPLETE (includes waiting for RX windows)
+15:16:15.812 -> 563944: EV_TXSTART
+15:16:15.812 -> Packet queued
+15:16:15.812 -> Sending packet on frequency: 918200000
+15:16:19.579 -> 801143: EV_TXCOMPLETE (includes waiting for RX windows)
+15:16:24.609 -> 1114120: EV_TXSTART
+15:16:24.609 -> Packet queued
+15:16:24.609 -> Sending packet on frequency: 916800000
+15:16:29.261 -> 1407476: EV_TXCOMPLETE (includes waiting for RX windows)
+15:16:34.287 -> 1720454: EV_TXSTART
+15:16:34.287 -> Packet queued
+15:16:34.287 -> Sending packet on frequency: 917200000
+15:16:37.502 -> 1920601: EV_TXCOMPLETE (includes waiting for RX windows)
+15:16:42.479 -> 2233582: EV_TXSTART
+15:16:42.479 -> Packet queued
+15:16:42.479 -> Sending packet on frequency: 917800000
+15:16:46.942 -> 2511463: EV_TXCOMPLETE (includes waiting for RX windows)
+15:16:51.968 -> 2824444: EV_TXSTART
+15:16:51.968 -> Packet queued
+15:16:51.968 -> Sending packet on frequency: 917600000
+15:16:56.744 -> 3124856: EV_TXCOMPLETE (includes waiting for RX windows)
+15:17:01.769 -> 3437835: EV_TXSTART
+15:17:01.769 -> Packet queued
+15:17:01.769 -> Sending packet on frequency: 917800000
+15:17:04.981 -> 3640714: EV_TXCOMPLETE (includes waiting for RX windows)
+15:17:09.995 -> 3953693: EV_TXSTART
+15:17:09.995 -> Packet queued
+15:17:09.995 -> Sending packet on frequency: 917600000
+15:17:13.580 -> 4176235: EV_TXCOMPLETE (includes waiting for RX windows)
+15:17:18.569 -> 4489215: EV_TXSTART
+15:17:18.569 -> Packet queued
+15:17:18.569 -> Sending packet on frequency: 917200000
+15:17:22.199 -> 4717244: EV_TXCOMPLETE (includes waiting for RX windows)
+15:17:27.218 -> 5030227: EV_TXSTART
+15:17:27.218 -> Packet queued
+15:17:27.218 -> Sending packet on frequency: 917400000
+15:17:30.514 -> 5236187: EV_TXCOMPLETE (includes waiting for RX windows)
+15:17:35.543 -> 5549253: EV_TXSTART
+15:17:35.543 -> Packet queued
+15:17:35.543 -> Sending packet on frequency: 917800000
+15:17:38.378 -> 5727757: EV_TXCOMPLETE (includes waiting for RX windows)
+15:17:43.397 -> 6040737: EV_TXSTART
+15:17:43.397 -> Packet queued
+15:17:43.397 -> Sending packet on frequency: 916800000
+15:17:46.886 -> 6258451: EV_TXCOMPLETE (includes waiting for RX windows)
+15:17:51.863 -> 6571433: EV_TXSTART
+15:17:51.863 -> Packet queued
+15:17:51.863 -> Sending packet on frequency: 917200000
+15:17:56.319 -> 6848731: EV_TXCOMPLETE (includes waiting for RX windows)
+15:18:01.292 -> 7161711: EV_TXSTART
+15:18:01.338 -> Packet queued
+15:18:01.338 -> Sending packet on frequency: 917400000
+15:18:04.307 -> 7350156: EV_TXCOMPLETE (includes waiting for RX windows)
+15:18:09.319 -> 7663134: EV_TXSTART
+15:18:09.319 -> Packet queued
+15:18:09.319 -> Sending packet on frequency: 916800000
+15:18:13.091 -> 7898693: EV_TXCOMPLETE (includes waiting for RX windows)
+15:18:18.117 -> 8211674: EV_TXSTART
+15:18:18.117 -> Packet queued
+15:18:18.117 -> Sending packet on frequency: 918000000
+15:18:22.024 -> 8456831: EV_TXCOMPLETE (includes waiting for RX windows)
+15:18:27.054 -> 8769813: EV_TXSTART
+15:18:27.054 -> Packet queued
+15:18:27.054 -> Sending packet on frequency: 917600000
