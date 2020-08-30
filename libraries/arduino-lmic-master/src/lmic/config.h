@@ -6,22 +6,22 @@
 // compiler commandline, use this file instead.
 
 
-#define CFG_eu868 1
-//#define CFG_us915 1
+//#define CFG_eu868 1
+#define CFG_us915 1
 //#define CFG_au921 1
 //#define CFG_as923 1
 //#define CFG_in866 1
 
-//#define LG02_LG01 1
+#define LG02_LG01 1
 
 //US915: DR_SF10=0, DR_SF9=1, DR_SF8=2, DR_SF7=3, DR_SF8C=4 
 //       DR_SF12CR=8, DR_SF11CR=9, DR_SF10CR=10, DR_SF9CR=11, DR_SF8CR=12, DR_SF7CR
 #if defined(CFG_us915) && defined(LG02_LG01)
 // CFG_us915 || CFG_as923 
-#define LG02_UPFREQ   902320000
+#define LG02_UPFREQ   916800000
 #define LG02_DNWFREQ  923300000
 #define LG02_RXSF     3      // DR_SF7  For LG01/LG02 Tx
-#define LG02_TXSF     8      // DR_SF12CR For LG02/LG02 Rx
+#define LG02_TXSF     13      // DR_SF12CR For LG02/LG02 Rx
 #elif defined(CFG_eu868) && defined(LG02_LG01)
 // CFG_eu868
 //EU868: DR_SF12=0, DR_SF11=1, DR_SF10=2, DR_SF9=3, DR_SF8=4, DR_SF7=5, DR_SF7B=1, DR_FSK, DR_NONE
@@ -36,7 +36,7 @@
 // enable more verbose output. Make sure that printf is actually
 // configured (e.g. on AVR it is not by default), otherwise using it can
 // cause crashing.
-#define LMIC_DEBUG_LEVEL 1
+#define LMIC_DEBUG_LEVEL 2
 
 // This is the SX1272/SX1273 radio, which is also used on the HopeRF
 // RFM92 boards.

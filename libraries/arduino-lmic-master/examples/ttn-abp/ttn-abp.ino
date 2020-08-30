@@ -36,15 +36,15 @@
 // LoRaWAN NwkSKey, network session key
 // This is the default Semtech key, which is used by the early prototype TTN
 // network.
-static const PROGMEM u1_t NWKSKEY[16] = { 0x9A, 0xEA, 0xD0, 0x93, 0x06, 0xE3, 0x2B, 0x73, 0xDD, 0x54, 0x7B, 0x8B, 0xFF, 0xDC, 0x20, 0xF9 };
+static const PROGMEM u1_t NWKSKEY[16] = { 0x1A, 0x71, 0xFD, 0x1C, 0xFC, 0x99, 0x53, 0x84, 0xE2, 0xCD, 0x7B, 0xEE, 0xBB, 0x7F, 0xE3, 0xF9 };
 
 // LoRaWAN AppSKey, application session key
 // This is the default Semtech key, which is used by the early prototype TTN
 // network.
-static const u1_t PROGMEM APPSKEY[16] = { 0xB6, 0x07, 0x5B, 0xB5, 0xE4, 0xCE, 0x40, 0xA2, 0xA3, 0xEE, 0x7B, 0xDF, 0xDC, 0x23, 0x0E, 0x2B };
+static const u1_t PROGMEM APPSKEY[16] = { 0x14, 0xEE, 0x5D, 0xE6, 0x45, 0xDE, 0x42, 0xA1, 0xA7, 0xAA, 0xF9, 0xAF, 0x36, 0x94, 0x90, 0x6E };
 
 // LoRaWAN end-device address (DevAddr)
-static const u4_t DEVADDR = 0x26011C22 ; // <-- Change this address for every node!
+static const u4_t DEVADDR = 0x26002FB5 ; // <-- Change this address for every node!
 
 // These callbacks are only used in over-the-air activation, so they are
 // left empty here (we cannot leave them out completely unless
@@ -101,15 +101,19 @@ void onEvent (ev_t ev) {
             break;
         case EV_TXCOMPLETE:
             Serial.println(F("EV_TXCOMPLETE (includes waiting for RX windows)"));
-            if (LMIC.txrxFlags & TXRX_ACK)
-              Serial.println(F("Received ack"));
-            if (LMIC.dataLen) {
+			Serial.println(F("Reporting from ttn-abp line 104"));
+			Serial.print(TXRX_ACK); Serial.print(F("Flags:")); Serial.println(LMIC.txrxFlags);
+			Serial.println(LMIC.txrxFlags);
+			
+ //**           if (LMIC.txrxFlags & TXRX_ACK)
+  //**            Serial.println(F("Received ack"));
+ //**           if (LMIC.dataLen) {
               Serial.println(F("Received "));
               Serial.println(LMIC.dataLen);
               Serial.println(F(" bytes of payload"));
-            }
+ //**           }
             // Schedule next transmission
-            os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
+           os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
             break;
         case EV_LOST_TSYNC:
             Serial.println(F("EV_LOST_TSYNC"));
