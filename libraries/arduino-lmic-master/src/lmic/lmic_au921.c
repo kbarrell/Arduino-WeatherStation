@@ -140,15 +140,15 @@ void  LMIC_enableSubBand(u1_t band) {
 
         // enable all eight 125 kHz channels in this subband
         for (int channel = start; channel < end; ++channel)
-//				Hack for Dragino LG01-N Single Channel -  disable all but that channel
-//               LMIC_enableChannel(channel);
+//**				Hack for Dragino LG01-N Single Channel -  disable all but that channel
+//**               LMIC_enableChannel(channel);
 					LMIC_disableChannel(channel);    
-			LMIC_enableChannel(8);		//  For LG01-N ooperating at 916.8mHz = Channel 8
+			LMIC_enableChannel(8);		//**  For LG01-N ooperating at 916.8mHz = Channel 8
 
         // there's a single 500 kHz channel associated with
         // each group of 8 125 kHz channels. Enable it, too.
-            LMIC_enableChannel(64 + band);
-	   // LMIC_disableChannel(64 + band);      //    Disable for single channel gateway
+        //**    LMIC_enableChannel(64 + band);
+	   LMIC_disableChannel(64 + band);      //**    Disable for single channel gateway
 }
 void  LMIC_disableSubBand(u1_t band) {
         ASSERT(band < 8);
@@ -203,7 +203,7 @@ void LMICau921_setBcnRxParams(void) {
 void LMICau921_setRx1Params(void) {
         u1_t const txdr = LMIC.dndr;
         u1_t candidateDr;
-        LMIC.freq = AU921_500kHz_DNFBASE + (LMIC.txChnl & 0x7) * AU921_500kHz_DNFSTEP;
+      LMIC.freq = AU921_500kHz_DNFBASE + (LMIC.txChnl & 0x7) * AU921_500kHz_DNFSTEP;
         if ( /* TX datarate */txdr < AU921_DR_SF8C)
                 candidateDr = txdr + 8 - LMIC.rx1DrOffset;
         else

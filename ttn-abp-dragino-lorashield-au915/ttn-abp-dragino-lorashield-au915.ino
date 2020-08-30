@@ -177,7 +177,7 @@ void do_send(osjob_t* j){
 }
 
 void setup() {
-//    pinMode(13, OUTPUT); 
+//    pinMode(13, OUTPUT);
     while (!Serial); // wait for Serial to be initialized
     Serial.begin(115200);
     delay(100);     // per sample code on RF_95 test
@@ -193,6 +193,9 @@ void setup() {
     // LMIC init
     os_init();
     // Reset the MAC state. Session and pending data transfers will be discarded.
+    Serial.print(F("Max Clock Error\t"));
+    Serial.println(MAX_CLOCK_ERROR);
+    LMIC_setClockError(MAX_CLOCK_ERROR * 20/100);   //**
     LMIC_reset();
 
     // Set static session parameters. Instead of dynamically establishing a session
