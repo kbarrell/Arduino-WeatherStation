@@ -1,0 +1,39 @@
+
+18:37:38.205 -> 2335954: engineUpdate, opmode=0x800
+18:37:43.180 -> 2648456: engineUpdate, opmode=0x808
+18:37:43.226 -> 2648933: EV_TXSTART
+18:37:43.226 -> 2648963: engineUpdate, opmode=0x888
+18:37:43.226 -> 2649026: TXMODE, freq=916800000, len=26, SF=7, BW=125, CR=4/5, IH=0
+18:37:43.226 -> Packet queued
+18:37:43.226 -> Sending packet on frequency: 916800000
+18:37:44.250 -> 2715042: setupRx1 txrxFlags 0x20 --> 01
+18:37:44.296 -> start single rx: now-rxtime: 7
+18:37:44.296 -> 2715194: RXMODE_SINGLE, freq=923300000, SF=7, BW=500, CR=4/5, IH=0
+18:37:44.296 -> rxtimeout: entry: 2715166 rxtime: 2715162 entry-rxtime: 4 now-entry: 7 rxtime-txend: 62524
+18:37:45.270 -> 2777901: setupRx2 txrxFlags 0x1 --> 02
+18:37:45.270 -> start single rx: now-rxtime: 7
+18:37:45.270 -> 2777991: RXMODE_SINGLE, freq=923300000, SF=9, BW=125, CR=4/5, IH=0
+18:37:45.317 -> rxtimeout: entry: 2778946 rxtime: 2778022 entry-rxtime: 924 now-entry: 7 rxtime-txend: 125384
+18:37:45.317 -> 2779129: processRx2DnData txrxFlags 0x2 --> 00
+18:37:46.664 -> 2864625: processDnData txrxFlags 00 --> 20
+18:37:46.664 -> 2864669: EV_TXCOMPLETE (includes waiting for RX windows)
+18:37:46.664 -> 
+18:37:46.664 -> 2864834: engineUpdate, opmode=0x800
+18:37:51.689 -> 3177336: engineUpdate, opmode=0x808
+18:37:51.689 -> 3177813: EV_TXSTART
+18:37:51.689 -> 3177842: engineUpdate, opmode=0x888
+18:37:51.689 -> 3177970: TXMODE, freq=916800000, len=26, SF=7, BW=125, CR=4/5, IH=0
+18:37:51.689 -> Packet queued
+18:37:51.689 -> Sending packet on frequency: 916800000
+18:37:52.762 -> 3243922: setupRx1 txrxFlags 0x20 --> 01
+18:37:52.762 -> start single rx: now-rxtime: -57
+18:37:52.762 -> 3244011: RXMODE_SINGLE, freq=923300000, SF=7, BW=500, CR=4/5, IH=0
+18:37:52.762 -> rxtimeout: entry: 3243984 rxtime: 3244041 entry-rxtime: -57 now-entry: 7 rxtime-txend: 62524
+18:37:53.739 -> 3306782: setupRx2 txrxFlags 0x1 --> 02
+18:37:53.739 -> start single rx: now-rxtime: 7
+18:37:53.786 -> 3306934: RXMODE_SINGLE, freq=923300000, SF=9, BW=125, CR=4/5, IH=0
+18:37:53.786 -> rxtimeout: entry: 3307824 rxtime: 3306901 entry-rxtime: 923 now-entry: 7 rxtime-txend: 125384
+18:37:53.786 -> 3308007: processRx2DnData txrxFlags 0x2 --> 00
+18:37:55.276 -> 3400863: processDnData txrxFlags 00 --> 20
+18:37:55.276 -> 3400907: EV_TXCOMPLETE (includes waiting for RX windows)
+18:37:55.276 -> 

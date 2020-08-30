@@ -1,0 +1,78 @@
+64736098: engineUpdate, opmode=0x800
+00:19:58.772 -> 65048600: engineUpdate, opmode=0x808
+00:19:58.772 -> 65049080: EV_TXSTART
+00:19:58.772 -> 65049112: engineUpdate, opmode=0x888
+00:19:58.772 -> 65049177: TXMODE, freq=916800000, len=26, SF=7, BW=125, CR=4/5, IH=0
+00:19:58.772 -> Packet queued
+00:19:58.772 -> Sending packet on frequency: 916800000
+00:19:59.844 -> 65115129: setupRx1 txrxFlags 0x20 --> 01
+00:19:59.844 -> start single rx: now-rxtime: 7
+00:19:59.844 -> 65115218: RXMODE_SINGLE, freq=923300000, SF=7, BW=500, CR=4/5, IH=0
+00:19:59.844 -> rxtimeout: entry: 65115259 rxtime: 65115249 entry-rxtime: 10 now-entry: 7 rxtime-txend: 62524
+00:20:00.821 -> 65177702: setupRx2 txrxFlags 0x1 --> 02
+00:20:00.868 -> start single rx: now-rxtime: 7
+00:20:00.868 -> 65177853: RXMODE_SINGLE, freq=923300000, SF=7, BW=125, CR=4/5, IH=0
+00:20:00.868 -> rxtimeout: entry: 65177830 rxtime: 65177821 entry-rxtime: 9 now-entry: 7 rxtime-txend: 125096
+00:20:00.868 -> 65178346: processRx2DnData txrxFlags 0x2 --> 00
+00:20:03.012 -> 65311786: processDnData txrxFlags 00 --> 20
+00:20:03.012 -> 65311831: EV_TXCOMPLETE (includes waiting for RX windows)
+00:20:03.012 -> 
+00:20:03.012 -> TxRxFlags;32
+00:20:03.012 -> 65312080: engineUpdate, opmode=0x800
+00:20:07.990 -> 65624582: engineUpdate, opmode=0x808
+00:20:07.990 -> 65625062: EV_TXSTART
+00:20:07.990 -> 65625094: engineUpdate, opmode=0x888
+00:20:07.990 -> 65625159: TXMODE, freq=916800000, len=26, SF=7, BW=125, CR=4/5, IH=0
+00:20:08.036 -> Packet queued
+00:20:08.036 -> Sending packet on frequency: 916800000
+00:20:09.059 -> 65691175: setupRx1 txrxFlags 0x20 --> 01
+00:20:09.059 -> start single rx: now-rxtime: 7
+00:20:09.059 -> 65691264: RXMODE_SINGLE, freq=923300000, SF=7, BW=500, CR=4/5, IH=0
+00:20:09.059 -> rxtimeout: entry: 65691305 rxtime: 65691295 entry-rxtime: 10 now-entry: 7 rxtime-txend: 62524
+00:20:10.082 -> 65753748: setupRx2 txrxFlags 0x1 --> 02
+00:20:10.082 -> start single rx: now-rxtime: -57
+00:20:10.082 -> 65753837: RXMODE_SINGLE, freq=923300000, SF=7, BW=125, CR=4/5, IH=0
+00:20:10.082 -> rxtimeout: entry: 65753815 rxtime: 65753867 entry-rxtime: -52 now-entry: 7 rxtime-txend: 125096
+00:20:10.082 -> 65754342: processRx2DnData txrxFlags 0x2 --> 00
+00:20:11.717 -> 65855800: processDnData txrxFlags 00 --> 20
+00:20:11.717 -> 65855845: EV_TXCOMPLETE (includes waiting for RX windows)
+00:20:11.717 -> 
+00:20:11.717 -> TxRxFlags;32
+00:20:11.717 -> 65856094: engineUpdate, opmode=0x800
+00:20:16.701 -> 66168594: engineUpdate, opmode=0x808
+00:20:16.701 -> 66169073: EV_TXSTART
+00:20:16.701 -> 66169106: engineUpdate, opmode=0x888
+00:20:16.748 -> 66169171: TXMODE, freq=916800000, len=26, SF=7, BW=125, CR=4/5, IH=0
+00:20:16.748 -> Packet queued
+00:20:16.748 -> Sending packet on frequency: 916800000
+00:20:17.769 -> 66235186: setupRx1 txrxFlags 0x20 --> 01
+00:20:17.769 -> start single rx: now-rxtime: 7
+00:20:17.769 -> 66235274: RXMODE_SINGLE, freq=923300000, SF=7, BW=500, CR=4/5, IH=0
+00:20:17.815 -> rxtimeout: entry: 66235315 rxtime: 66235305 entry-rxtime: 10 now-entry: 7 rxtime-txend: 62524
+00:20:18.790 -> 66297758: setupRx2 txrxFlags 0x1 --> 02
+00:20:18.790 -> start single rx: now-rxtime: 7
+00:20:18.790 -> 66297909: RXMODE_SINGLE, freq=923300000, SF=7, BW=125, CR=4/5, IH=0
+00:20:18.790 -> rxtimeout: entry: 66297886 rxtime: 66297877 entry-rxtime: 9 now-entry: 7 rxtime-txend: 125096
+00:20:18.790 -> 66298403: processRx2DnData txrxFlags 0x2 --> 00
+00:20:20.644 -> 66413684: processDnData txrxFlags 00 --> 20
+00:20:20.644 -> 66413730: EV_TXCOMPLETE (includes waiting for RX windows)
+00:20:20.644 -> 
+00:20:20.644 -> TxRxFlags;32
+00:20:20.644 -> 66413978: engineUpdate, opmode=0x800
+00:20:25.665 -> 66726478: engineUpdate, opmode=0x808
+00:20:25.665 -> 66726957: EV_TXSTART
+00:20:25.665 -> 66726990: engineUpdate, opmode=0x888
+00:20:25.665 -> 66727055: TXMODE, freq=916800000, len=26, SF=7, BW=125, CR=4/5, IH=0
+00:20:25.665 -> Packet queued
+00:20:25.665 -> Sending packet on frequency: 916800000
+00:20:26.735 -> 66793070: setupRx1 txrxFlags 0x20 --> 01
+00:20:26.735 -> start single rx: now-rxtime: 8
+00:20:26.735 -> 66793158: RXMODE_SINGLE, freq=923300000, SF=7, BW=500, CR=4/5, IH=0
+00:20:26.735 -> rxtimeout: entry: 66793199 rxtime: 66793189 entry-rxtime: 10 now-entry: 7 rxtime-txend: 62524
+00:20:27.710 -> 66855642: setupRx2 txrxFlags 0x1 --> 02
+00:20:27.710 -> start single rx: now-rxtime: 7
+00:20:27.710 -> 66855793: RXMODE_SINGLE, freq=923300000, SF=7, BW=125, CR=4/5, IH=0
+00:20:27.756 -> rxtimeout: entry: 66855770 rxtime: 66855761 entry-rxtime: 9 now-entry: 7 rxtime-txend: 125096
+00:20:27.756 -> 66856287: processRx2DnData txrxFlags 0x2 --> 00
+00:20:29.521 -> 66966157: processDnData txrxFlags 00 --> 20
+00:20:29.521 -> 66966202: EV_TXCOMPLETE (includes waiting for RX wi

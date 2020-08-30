@@ -117,9 +117,8 @@ void onEvent (ev_t ev) {
             Serial.println(F("EV_REJOIN_FAILED"));
             break;
         case EV_TXCOMPLETE:
-            Serial.println(F("EV_TXCOMPLETE (includes waiting for RX windows)"));
-			Serial.print(F("Flags:"));  Serial.println(LMIC.txrxFlags);
-			Serial.print(F("TxRxAck const:"));  Serial.println(TXRX_ACK);
+            Serial.println(F("EV_TXCOMPLETE (includes waiting for RX windows)\n"));
+			Serial.print(F("TxRxFlags;"));   Serial.println(LMIC.txrxFlags);
             if (LMIC.txrxFlags & TXRX_ACK)
               Serial.println(F("Received ack"));
             if (LMIC.dataLen) {
@@ -255,7 +254,8 @@ void setup() {
     LMIC_setLinkCheckMode(0);
 
     // TTN uses SF9 for its RX2 window.
-    LMIC.dn2Dr = DR_SF9;
+    //LMIC.dn2Dr = DR_SF9;
+	LMIC.dn2Dr = DR_SF7;
 
     // Set data rate and transmit power for uplink (note: txpow seems to be ignored by the library)
     LMIC_setDrTxpow(DR_SF7,14);
