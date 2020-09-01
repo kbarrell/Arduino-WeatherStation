@@ -118,7 +118,6 @@ void onEvent (ev_t ev) {
             break;
         case EV_TXCOMPLETE:
             Serial.println(F("EV_TXCOMPLETE (includes waiting for RX windows)\n"));
-			Serial.print(F("TxRxFlags;"));   Serial.println(LMIC.txrxFlags);
             if (LMIC.txrxFlags & TXRX_ACK)
               Serial.println(F("Received ack"));
             if (LMIC.dataLen) {
@@ -194,9 +193,9 @@ void setup() {
     // LMIC init
     os_init();
     // Reset the MAC state. Session and pending data transfers will be discarded.
-    Serial.print(F("Max Clock Error\t"));
-    Serial.println(MAX_CLOCK_ERROR);
-    LMIC_setClockError(MAX_CLOCK_ERROR * 20/100);   //**
+//**    Serial.print(F("Max Clock Error\t"));
+//**    Serial.println(MAX_CLOCK_ERROR);
+//**    LMIC_setClockError(MAX_CLOCK_ERROR * 20/100);   //**
     LMIC_reset();
 
     // Set static session parameters. Instead of dynamically establishing a session
@@ -255,7 +254,7 @@ void setup() {
 
     // TTN uses SF9 for its RX2 window.
     //LMIC.dn2Dr = DR_SF9;
-	LMIC.dn2Dr = DR_SF7CR;
+	LMIC.dn2Dr = DR_SF7CR;    //** now uses SF7 
 
     // Set data rate and transmit power for uplink (note: txpow seems to be ignored by the library)
     LMIC_setDrTxpow(DR_SF7,14);
