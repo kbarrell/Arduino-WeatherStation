@@ -5,8 +5,9 @@ to visit the hookup guide on the cactus.io website.
 http://cactus.io/hookups/weather/rain/hydreon/hookup-arduino-to-hydreon-rg-11-rain-sensor
 */
 
-#define RG11_Pin 2
-#define Bucket_Size 0.01
+#define RG11_Pin 3
+
+#define Bucket_Size 0.2    //  mm
 
 volatile unsigned long tipCount;     // bucket tip counter used in interrupt routine
 volatile unsigned long ContactTime;  // Timer to manage any contact bounce in interrupt routine

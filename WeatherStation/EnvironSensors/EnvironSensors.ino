@@ -1,5 +1,4 @@
 #include <cactus_io_BME280_I2C.h>
-// #include "cactus_io_DS18B20.h"
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
@@ -15,6 +14,8 @@
 #define WindVane_Pin  (A3)       // The pin connecting to the wind vane sensor
 #define VaneOffset  0		   // The anemometer offset from magnetic north
 
+#define Bucket_Size  0.2    // mm bucket capacity to trigger tip count
+#define RG11_Pin  3         // Interrupt pin for rain sensor
 
 volatile bool isSampleRequired;    // set true every 2.5s.   Get wind speed
 volatile unsigned int timerCount;  // used to determine the 2.5s timer count
@@ -22,16 +23,18 @@ volatile unsigned long rotations;  // cup rotation counter for wind speed calcs
 volatile unsigned long contactBounceTime;  // Timer to avoid contact bounce in wind speed sensor
 volatile float windSpeed;        // speed in km per hour
 
+volatile unsigned long tipCount;   // rain bucket tipcounter used in interrupt routine
+volatile unsigned long contactTime; // timer to manage contact bounce in interrupt routine
+volatile float totalRainfall;       // total amount of rainfall recorded
+
 bool txState;			// current LED state for tx rx LED
 int vaneValue;          //  raw analog value from wind vane
 int vaneDirection;          //  translated 0-360 direction
 int calDirection;       //  converted value with offset applied
 int lastDirValue;          //  last direction value
 
-// int DS18B20_Pin = 9;  //DS18B20 Signal pin is 9
 
-//  Create DS18B20 object & BME280 object
-//DS18B20 ds(DS18B20_Pin);
+//  Create BME280 object
 BME280_I2C bme;     // I2C using address 0x77
 
 // Setup a oneWire instance to communicate with OneWire devices
@@ -44,6 +47,9 @@ DeviceAddress caseTempAddr = { 0x28, 0xAA, 0x68, 0x93, 0x41, 0x14, 0x01, 0xD8 };
 
 
 void setup() {
+  
+  txState = HIGH;
+  
   // setup anemometer values
   lastDirValue = 0;
   rotations = 0;
@@ -52,8 +58,7 @@ void setup() {
   // setup timer values
   timerCount = 0;
   
- // ds.readSensor();
-  // Initialise the Temperature measurement library & set sensor resolution to 10 bitset
+  // Initialise the Temperature measurement library & set sensor resolution to 12 (10) bits
   DSsensors.setResolution(airTempAddr, 12);
   DSsensors.setResolution(caseTempAddr, 10);
  
@@ -62,21 +67,21 @@ void setup() {
   while (!Serial);      //wait for serial
   delay(200);
   
-  Serial.println("cactus.io | Weather Station DS18B20, BMEA280 Sensor Test");
-  Serial.println("DS Temp\t\tBME Temp\tHumidity\t\tPressure");
+  Serial.println(" Weather Station DS18B20, BME280, RG11, Davis Sensor Test");
+  Serial.println("DS Temp\t\tBME Temp\tHumidity\t\tPressure\tRainfall\tSpeed\tDirection");
 
   if (!bme.begin())  {
       Serial.println("Could not find BME280 sensor -  check wiring");
       while (1);
   }
-  
-  Serial.println("Davis Anemometer Test");
-  Serial.println("Speed  (KPH)\tDirection");
-  
+   
+  // Setup pins & interrupts	
+  pinMode(TX_Pin, OUTPUT);
   pinMode(WindSensor_Pin, INPUT);
+  pinMode(RG11_Pin, INPUT);
   attachInterrupt(digitalPinToInterrupt(WindSensor_Pin), isr_rotation, FALLING);
+  attachInterrupt(digitalPinToInterrupt(RG11_Pin),isr_rg, FALLING);
 
-  
   //Setup the timer for 0.5s
   Timer1.initialize(500000);     
   Timer1.attachInterrupt(isr_timer);
@@ -86,59 +91,49 @@ void setup() {
 
 void loop() {
   tmElements_t tm;    
- // ds.readSensor();
- // Read temperatures from all DS18B20 devices
-  DSsensors.requestTemperatures();
+   
+  DSsensors.requestTemperatures();    // Read temperatures from all DS18B20 devices
   bme.readSensor();
 
-//  Serial.print("DS18 Air:  ");Serial.print(ds.getTemperature_C()); Serial.print(" °C\t");
-  Serial.print("DS18 Air:   ");  Serial.print(DSsensors.getTempC(airTempAddr));  Serial.print(" °C\t");
-  Serial.print("DS18 Case:   ");  Serial.print(DSsensors.getTempC(caseTempAddr));  Serial.print(" °C\t");
-  Serial.print("BME:  "); Serial.print(bme.getTemperature_C()); Serial.print(" °C\t");
-
-if (RTC.read(tm)) {
-    Serial.print("\nRecorded: ");
-    Serial.print(tm.Day);
-    Serial.write('/');
-    Serial.print(tm.Month);
-    Serial.write('/');
-    Serial.print(tmYearToCalendar(tm.Year));
-    Serial.print(' ');
-    print2digits(tm.Hour);
-    Serial.write(':');
-    print2digits(tm.Minute);
-    Serial.write(':');
-    print2digits(tm.Second);
-    Serial.write(' ');
-  } else {
-    if (RTC.chipPresent()) {
-      Serial.println("The DS1307 is stopped.  Please run the SetTime");
-      Serial.println("example to initialize the time and begin running.");
-      Serial.println();
-    } else {
-      Serial.println("DS1307 read error!  Please check the circuitry.");
-      Serial.println();
-    }
-  }
-//  Serial.print(ds.getTemperature_C()); Serial.print(" °C\t");
-  Serial.print("DS18 Air:   ");  Serial.print(DSsensors.getTempC(airTempAddr));  Serial.print(" °C\t");
-  Serial.print("DS18 Case:   ");  Serial.print(DSsensors.getTempC(caseTempAddr));  Serial.print(" °C\t");
-  Serial.print(bme.getTemperature_C()); Serial.print(" °C\t");
-  Serial.print(bme.getHumidity());   Serial.print(" %\t\t");
-  Serial.print(bme.getPressure_MB());  Serial.println(" hPa");
-
-  //  Add a 2 second delay.
-  delay(2000); 
-  
   if(isSampleRequired) {
 	
-	getWindDirection();
-	
+    getWindDirection();	
+  
+    if (RTC.read(tm)) {
+      Serial.print("\nRecorded: ");
+      Serial.print(tm.Day);
+      Serial.write('/');
+      Serial.print(tm.Month);
+      Serial.write('/');
+      Serial.print(tmYearToCalendar(tm.Year));
+      Serial.print(' ');
+      print2digits(tm.Hour);
+      Serial.write(':');
+      print2digits(tm.Minute);
+      Serial.write(':');
+      print2digits(tm.Second);
+      Serial.write(' ');
+    } else {
+      if (RTC.chipPresent()) {
+        Serial.println("The DS1307 is stopped.  Please run the SetTime");
+        Serial.println("example to initialize the time and begin running.");
+        Serial.println();
+      } else {
+      Serial.println("DS1307 read error!  Please check the circuitry.");
+      Serial.println();
+      }
+    }
+
+    Serial.print("DS18 Air:   ");  Serial.print(DSsensors.getTempC(airTempAddr));  Serial.print(" °C\t");
+    Serial.print("DS18 Case:   ");  Serial.print(DSsensors.getTempC(caseTempAddr));  Serial.print(" °C\t");
+    Serial.print(bme.getTemperature_C()); Serial.print(" °C\t");
+    Serial.print(bme.getHumidity());   Serial.print(" %\t\t");
+    Serial.print(bme.getPressure_MB());  Serial.print(" hPa\t");
+	Serial.print(totalRainfall);  Serial.print(" mm\t\t");
 	Serial.print(windSpeed);   Serial.print(" kph\t");
 	Serial.print(calDirection);   Serial.println("deg.");
 	
-	isSampleRequired = false;
-   }
+  }
 }
 
 // Interrupt handler routine for timer interrupt
@@ -166,6 +161,16 @@ void isr_rotation ()   {
     contactBounceTime = millis();
   }
 }
+
+// Interrrupt handler routine that is triggered when the rg-11 detects rain   
+void isr_rg ()   { 
+
+   if ((millis() - contactTime) > 15 ) {  // debounce of sensor signal
+      tipCount++;
+	  totalRainfall = tipCount * Bucket_Size;
+      contactTime = millis();
+   } 
+} 
 
 // Get Wind Direction
 void getWindDirection() {
