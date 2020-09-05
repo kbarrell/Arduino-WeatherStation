@@ -1,5 +1,7 @@
 #include <cactus_io_BME280_I2C.h>
-#include "cactus_io_DS18B20.h"
+// #include "cactus_io_DS18B20.h"
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
 #include "TimerOne.h"     // Timer Interrupt set to 2 sec for read sensors
 #include <math.h>
@@ -7,6 +9,7 @@
 #include <DS1307RTC.h>    // For TinyRTC breakout board
 
 #define TX_Pin 8  // used to indicate web data tx
+#define ONE_WIRE_BUS_PIN 9     //Data bus pin for DS18B20's
 
 #define WindSensor_Pin (2)       //The pin location of the anemometer sensor
 #define WindVane_Pin  (A3)       // The pin connecting to the wind vane sensor
@@ -25,11 +28,20 @@ int vaneDirection;          //  translated 0-360 direction
 int calDirection;       //  converted value with offset applied
 int lastDirValue;          //  last direction value
 
-int DS18B20_Pin = 9;  //DS18B20 Signal pin is 9
+// int DS18B20_Pin = 9;  //DS18B20 Signal pin is 9
 
 //  Create DS18B20 object & BME280 object
-DS18B20 ds(DS18B20_Pin);
+//DS18B20 ds(DS18B20_Pin);
 BME280_I2C bme;     // I2C using address 0x77
+
+// Setup a oneWire instance to communicate with OneWire devices
+OneWire oneWire(ONE_WIRE_BUS_PIN);
+DallasTemperature DSsensors(&oneWire);    // Pass the OneWire reference to Dallas Temperature
+
+// Assign the addresses of the DS18B20 sensors (determined by reading them previously)
+DeviceAddress airTempAddr = { 0x28, 0x1A, 0x30, 0x94, 0x3A, 0x19, 0x01, 0x55 };
+DeviceAddress caseTempAddr = { 0x28, 0xAA, 0x68, 0x93, 0x41, 0x14, 0x01, 0xD8 };
+
 
 void setup() {
   // setup anemometer values
@@ -40,7 +52,11 @@ void setup() {
   // setup timer values
   timerCount = 0;
   
-  ds.readSensor();
+ // ds.readSensor();
+  // Initialise the Temperature measurement library & set sensor resolution to 10 bitset
+  DSsensors.setResolution(airTempAddr, 12);
+  DSsensors.setResolution(caseTempAddr, 10);
+ 
 
   Serial.begin(9600);
   while (!Serial);      //wait for serial
@@ -70,11 +86,15 @@ void setup() {
 
 void loop() {
   tmElements_t tm;    
-  ds.readSensor();
+ // ds.readSensor();
+ // Read temperatures from all DS18B20 devices
+  DSsensors.requestTemperatures();
   bme.readSensor();
 
-  Serial.print(ds.getTemperature_C()); Serial.print(" °C\t");
-  Serial.print(bme.getTemperature_C()); Serial.print(" °C\t");
+//  Serial.print("DS18 Air:  ");Serial.print(ds.getTemperature_C()); Serial.print(" °C\t");
+  Serial.print("DS18 Air:   ");  Serial.print(DSsensors.getTempC(airTempAddr));  Serial.print(" °C\t");
+  Serial.print("DS18 Case:   ");  Serial.print(DSsensors.getTempC(caseTempAddr));  Serial.print(" °C\t");
+  Serial.print("BME:  "); Serial.print(bme.getTemperature_C()); Serial.print(" °C\t");
 
 if (RTC.read(tm)) {
     Serial.print("\nRecorded: ");
@@ -100,8 +120,10 @@ if (RTC.read(tm)) {
       Serial.println();
     }
   }
-  Serial.print(ds.getTemperature_C()); Serial.print(" *C\t");
-  Serial.print(bme.getTemperature_C()); Serial.print(" *C\t");
+//  Serial.print(ds.getTemperature_C()); Serial.print(" °C\t");
+  Serial.print("DS18 Air:   ");  Serial.print(DSsensors.getTempC(airTempAddr));  Serial.print(" °C\t");
+  Serial.print("DS18 Case:   ");  Serial.print(DSsensors.getTempC(caseTempAddr));  Serial.print(" °C\t");
+  Serial.print(bme.getTemperature_C()); Serial.print(" °C\t");
   Serial.print(bme.getHumidity());   Serial.print(" %\t\t");
   Serial.print(bme.getPressure_MB());  Serial.println(" hPa");
 
