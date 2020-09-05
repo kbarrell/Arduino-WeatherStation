@@ -3,6 +3,8 @@
 
 #include "TimerOne.h"     // Timer Interrupt set to 2 sec for read sensors
 #include <math.h>
+#include <Wire.h>         // For RTC
+#include <DS1307RTC.h>    // For TinyRTC breakout board
 
 #define TX_Pin 8  // used to indicate web data tx
 
@@ -41,6 +43,9 @@ void setup() {
   ds.readSensor();
 
   Serial.begin(9600);
+  while (!Serial);      //wait for serial
+  delay(200);
+  
   Serial.println("cactus.io | Weather Station DS18B20, BMEA280 Sensor Test");
   Serial.println("DS Temp\t\tBME Temp\tHumidity\t\tPressure");
 
@@ -64,16 +69,44 @@ void setup() {
 }
 
 void loop() {
+  tmElements_t tm;    
   ds.readSensor();
   bme.readSensor();
 
   Serial.print(ds.getTemperature_C()); Serial.print(" °C\t");
   Serial.print(bme.getTemperature_C()); Serial.print(" °C\t");
+
+if (RTC.read(tm)) {
+    Serial.print("\nRecorded: ");
+    Serial.print(tm.Day);
+    Serial.write('/');
+    Serial.print(tm.Month);
+    Serial.write('/');
+    Serial.print(tmYearToCalendar(tm.Year));
+    Serial.print(' ');
+    print2digits(tm.Hour);
+    Serial.write(':');
+    print2digits(tm.Minute);
+    Serial.write(':');
+    print2digits(tm.Second);
+    Serial.write(' ');
+  } else {
+    if (RTC.chipPresent()) {
+      Serial.println("The DS1307 is stopped.  Please run the SetTime");
+      Serial.println("example to initialize the time and begin running.");
+      Serial.println();
+    } else {
+      Serial.println("DS1307 read error!  Please check the circuitry.");
+      Serial.println();
+    }
+  }
+  Serial.print(ds.getTemperature_C()); Serial.print(" *C\t");
+  Serial.print(bme.getTemperature_C()); Serial.print(" *C\t");
   Serial.print(bme.getHumidity());   Serial.print(" %\t\t");
-  Serial.print(bme.getPressure_MB());  Serial.println(" mb");
+  Serial.print(bme.getPressure_MB());  Serial.println(" hPa");
 
   //  Add a 2 second delay.
-  delay(2000);
+  delay(2000); 
   
   if(isSampleRequired) {
 	
@@ -124,4 +157,12 @@ void getWindDirection() {
 	
 	if(calDirection > 360)
 		calDirection = calDirection - 360;
+}
+
+// Field format utility for printing
+void print2digits(int number)  {
+	if (number >= 0 && number <10) {
+		Serial.write('0');
+	}
+	Serial.print(number);
 }
