@@ -67,8 +67,8 @@ void loop() {
   ds.readSensor();
   bme.readSensor();
 
-  Serial.print(ds.getTemperature_C()); Serial.print(" *C\t");
-  Serial.print(bme.getTemperature_C()); Serial.print(" *C\t");
+  Serial.print(ds.getTemperature_C()); Serial.print(" °C\t");
+  Serial.print(bme.getTemperature_C()); Serial.print(" °C\t");
   Serial.print(bme.getHumidity());   Serial.print(" %\t\t");
   Serial.print(bme.getPressure_MB());  Serial.println(" mb");
 
@@ -80,7 +80,7 @@ void loop() {
 	getWindDirection();
 	
 	Serial.print(windSpeed);   Serial.print(" kph\t");
-	Serial.print(calDirection);   Serial.println("*");
+	Serial.print(calDirection);   Serial.println("deg.");
 	
 	isSampleRequired = false;
    }
