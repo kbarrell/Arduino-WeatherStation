@@ -141,7 +141,7 @@ void isr_timer() {
 	
 	timerCount++;
 	
-	if(timerCount == 5) {
+	if(timerCount == 20) {
 		// convert to km/h using the formula V=P(2.25/T)*1.609
 		// i.e. V = P(2.25/3)*1.609 = P * 1.207	
 		windSpeed = rotations * 1.207;
