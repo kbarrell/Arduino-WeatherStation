@@ -4,16 +4,17 @@
 
 #include "TimerOne.h"     // Timer Interrupt set to 2 sec for read sensors
 #include <math.h>
-#include <Wire.h>         // For RTC
+#include <Wire.h>         // For accessing RTC
 #include <DS1307RTC.h>    // For TinyRTC breakout board
+#include <TimeLib.h>      // For epoch time en/decode
 
+// Set hardware pin assignments & configured constants
 #define TX_Pin 8  // used to indicate web data tx
 #define ONE_WIRE_BUS_PIN 9     //Data bus pin for DS18B20's
 
 #define WindSensor_Pin (2)       //The pin location of the anemometer sensor
 #define WindVane_Pin  (A3)       // The pin connecting to the wind vane sensor
 #define VaneOffset  0		   // The anemometer offset from magnetic north
-
 #define Bucket_Size  0.2    // mm bucket capacity to trigger tip count
 #define RG11_Pin  3         // Interrupt pin for rain sensor
 
@@ -26,6 +27,23 @@ volatile float windSpeed;        // speed in km per hour
 volatile unsigned long tipCount;   // rain bucket tipcounter used in interrupt routine
 volatile unsigned long contactTime; // timer to manage contact bounce in interrupt routine
 volatile float totalRainfall;       // total amount of rainfall recorded
+
+// Define structures for handling reporting via TTN
+typedef struct obsSet {
+	time_t 	obsReportTime;    // unix Epoch    32bits
+	int		tempX10;		// observed temp (°C) x 10   ~range -200->600
+	uint16_t	humidX10;	// observed relative humidty (%) x 10   range 0->1000
+	int		pressX10;		// observed barometric pressure at station level (hPa) - 1000 x 10  ~range -500->500 
+	uint16_t	rainflX10;	// observed accumulated rainfall (mm) x10   ~range 0->1200
+	uint16_t	windspX10;	// observed windspeed (km/h) x10 ~range 0->1200
+	int		windDir;		// observed wind direction (compass degress)  range 0->359
+} obsSet;
+	
+union obsPayload
+{
+	obsSet	obsReport;
+	char	readAccess[sizeof(obsSet)];
+};
 
 bool txState;			// current LED state for tx rx LED
 int vaneValue;          //  raw analog value from wind vane
@@ -90,7 +108,8 @@ void setup() {
 }
 
 void loop() {
-  tmElements_t tm;    
+  tmElements_t tm;
+  union obsPayload currentObs;  
    
   DSsensors.requestTemperatures();    // Read temperatures from all DS18B20 devices
   bme.readSensor();
@@ -100,6 +119,7 @@ void loop() {
     getWindDirection();	
   
     if (RTC.read(tm)) {
+	  currentObs.obsReport.obsReportTime = makeTime(tm);
       Serial.print("\nRecorded: ");
       Serial.print(tm.Day);
       Serial.write('/');
@@ -113,6 +133,7 @@ void loop() {
       Serial.write(':');
       print2digits(tm.Second);
       Serial.write(' ');
+	  Serial.print(currentObs.readAccess);
     } else {
       if (RTC.chipPresent()) {
         Serial.println("The DS1307 is stopped.  Please run the SetTime");
@@ -123,15 +144,18 @@ void loop() {
       Serial.println();
       }
     }
-
-    Serial.print("DS18 Air:   ");  Serial.print(DSsensors.getTempC(airTempAddr));  Serial.print(" °C\t");
+// Read all sensors
+  
+    Serial.print("DS18 Air:   ");  Serial.print(currentObs.obsReport.tempX10 = DSsensors.getTempC(airTempAddr)* 10.0);  Serial.print(" °C\t");
     Serial.print("DS18 Case:   ");  Serial.print(DSsensors.getTempC(caseTempAddr));  Serial.print(" °C\t");
     Serial.print(bme.getTemperature_C()); Serial.print(" °C\t");
-    Serial.print(bme.getHumidity());   Serial.print(" %\t\t");
-    Serial.print(bme.getPressure_MB());  Serial.print(" hPa\t");
-	Serial.print(totalRainfall);  Serial.print(" mm\t\t");
-	Serial.print(windSpeed);   Serial.print(" kph\t");
-	Serial.print(calDirection);   Serial.println("deg.");
+    Serial.print(currentObs.obsReport.humidX10 = bme.getHumidity()*10.0);   Serial.print(" %\t\t");
+    Serial.print(currentObs.obsReport.pressX10 = (bme.getPressure_MB()- 1000.0)*10.0);  Serial.print(" hPa\t");
+    Serial.print(totalRainfall);  Serial.print(" mm\t\t");
+//	Serial.print(currentObs.obsReport.rainflX10 = totalRainfall*10.0);  Serial.print(" mm\t\t");
+//	Serial.print(currentObs.obsReport.windspX10 = windSpeed*10.0);   Serial.print(" kph\t");
+  Serial.print(windSpeed);   Serial.print(" kph\t");
+	Serial.print(currentObs.obsReport.windDir = calDirection);   Serial.println("deg.");
 	
   }
 }
