@@ -65,7 +65,7 @@ void setup() {
 
   Serial.begin(9600);
   while (!Serial);      //wait for serial
-  delay(200);
+//  delay(200);
   
   Serial.println(" Weather Station DS18B20, BME280, RG11, Davis Sensor Test");
   Serial.println("DS Temp\t\tBME Temp\tHumidity\t\tPressure\tRainfall\tSpeed\tDirection");
@@ -132,7 +132,8 @@ void loop() {
 	Serial.print(totalRainfall);  Serial.print(" mm\t\t");
 	Serial.print(windSpeed);   Serial.print(" kph\t");
 	Serial.print(calDirection);   Serial.println("deg.");
-	
+
+  isSampleRequired = false;
   }
 }
 
