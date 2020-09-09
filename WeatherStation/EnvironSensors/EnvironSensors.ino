@@ -159,6 +159,7 @@ void loop() {
     Serial.print(windSpeed);   Serial.print(" kph\t");
 	Serial.print(currentObs.obsReport.windDir = calDirection);   Serial.println("deg.");
 	
+	isSampleRequired = false;
   }
 }
 
@@ -167,10 +168,11 @@ void isr_timer() {
 	
 	timerCount++;
 	
-	if(timerCount == 20) {
+	if(timerCount == 5) {
+		//  5 x 0.5s = 2.5s rotation counting interval
 		// convert to km/h using the formula V=P(2.25/T)*1.609
-		// i.e. V = P(2.25/3)*1.609 = P * 1.207	
-		windSpeed = rotations * 1.207;
+		// i.e. V = P(2.25/2.5)*1.609 = P * 1.4481	
+		windSpeed = rotations * 1.4481;
 		rotations = 0;   
 		txState = !txState;     
 		digitalWrite(TX_Pin, txState);
