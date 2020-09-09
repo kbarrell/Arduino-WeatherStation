@@ -18,8 +18,15 @@
 #define Bucket_Size  0.2    // mm bucket capacity to trigger tip count
 #define RG11_Pin  3         // Interrupt pin for rain sensor
 
-volatile bool isSampleRequired;    // set true every 2.5s.   Get wind speed
-volatile unsigned int timerCount;  // used to determine the 2.5s timer count
+// Set timer related settings for sensor sampling & calculation
+#define Timing_Clock  500000    //  0.5sec in millis
+#define Sample_Interval   5		//  = number of Timing_Clock cycles  i.e. 2.5sec
+#define Speed_Conversion  1.4481   // convert rotations to km/h.  = 2.25/(Sample_Interval x Timing_Clock)* 1.609 
+									// refer Davis anemometer technical spec
+
+
+volatile bool isSampleRequired;    // set true every Sample_Interval.   Get wind speed
+volatile unsigned int timerCount;  // used to determine when Sample_Interval is reached
 volatile unsigned long rotations;  // cup rotation counter for wind speed calcs
 volatile unsigned long contactBounceTime;  // Timer to avoid contact bounce in wind speed sensor
 volatile float windSpeed;        // speed in km per hour
@@ -101,7 +108,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(RG11_Pin),isr_rg, FALLING);
 
   //Setup the timer for 0.5s
-  Timer1.initialize(500000);     
+  Timer1.initialize(Timing_Clock);     
   Timer1.attachInterrupt(isr_timer);
   
   sei();   // Enable Interrupts
@@ -133,7 +140,7 @@ void loop() {
       Serial.write(':');
       print2digits(tm.Second);
       Serial.write(' ');
-	//  Serial.print(currentObs.readAccess);
+	  Serial.print(currentObs.readAccess);    
     } else {
       if (RTC.chipPresent()) {
         Serial.println("The DS1307 is stopped.  Please run the SetTime");
@@ -149,14 +156,14 @@ void loop() {
     Serial.print("DS18 Air:   ");  Serial.print(currentObs.obsReport.tempX10 = DSsensors.getTempC(airTempAddr)* 10.0);  Serial.print(" °C\t");
     Serial.print("DS18 Case:   ");  Serial.print(DSsensors.getTempC(caseTempAddr));  Serial.print(" °C\t");
     Serial.print(bme.getTemperature_C()); Serial.print(" °C\t");
-	Serial.print(bme.getHumidity()); Serial.print(" %\t\t");
-//    Serial.print(currentObs.obsReport.humidX10 = bme.getHumidity()*10.0);   Serial.print(" %\t\t");
-	Serial.print(bme.getPressure_MB()); Serial.print(" hPa\t");
-//    Serial.print(currentObs.obsReport.pressX10 = (bme.getPressure_MB()- 1000.0)*10.0);  Serial.print(" hPa\t");
-    Serial.print(totalRainfall);  Serial.print(" mm\t\t");
-//	Serial.print(currentObs.obsReport.rainflX10 = totalRainfall*10.0);  Serial.print(" mm\t\t");
-//	Serial.print(currentObs.obsReport.windspX10 = windSpeed*10.0);   Serial.print(" kph\t");
-    Serial.print(windSpeed);   Serial.print(" kph\t");
+//	Serial.print(bme.getHumidity()); Serial.print(" %\t\t");
+    Serial.print(currentObs.obsReport.humidX10 = bme.getHumidity()*10.0);   Serial.print(" %\t\t");
+//	Serial.print(bme.getPressure_MB()); Serial.print(" hPa\t");
+    Serial.print(currentObs.obsReport.pressX10 = (bme.getPressure_MB()- 1000.0)*10.0);  Serial.print(" hPa\t");
+//  Serial.print(totalRainfall);  Serial.print(" mm\t\t");
+	Serial.print(currentObs.obsReport.rainflX10 = totalRainfall*10.0);  Serial.print(" mm\t\t");
+	Serial.print(currentObs.obsReport.windspX10 = windSpeed*10.0);   Serial.print(" kph\t");
+//  Serial.print(windSpeed);   Serial.print(" kph\t");
 	Serial.print(currentObs.obsReport.windDir = calDirection);   Serial.println("deg.");
 	
 	isSampleRequired = false;
@@ -168,11 +175,11 @@ void isr_timer() {
 	
 	timerCount++;
 	
-	if(timerCount == 5) {
+	if(timerCount == Sample_Interval) {
 		//  5 x 0.5s = 2.5s rotation counting interval
 		// convert to km/h using the formula V=P(2.25/T)*1.609
 		// i.e. V = P(2.25/2.5)*1.609 = P * 1.4481	
-		windSpeed = rotations * 1.4481;
+		windSpeed = rotations * Speed_Conversion;
 		rotations = 0;   
 		txState = !txState;     
 		digitalWrite(TX_Pin, txState);
