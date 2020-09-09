@@ -133,7 +133,7 @@ void loop() {
       Serial.write(':');
       print2digits(tm.Second);
       Serial.write(' ');
-	  Serial.print(currentObs.readAccess);
+	//  Serial.print(currentObs.readAccess);
     } else {
       if (RTC.chipPresent()) {
         Serial.println("The DS1307 is stopped.  Please run the SetTime");
@@ -149,12 +149,14 @@ void loop() {
     Serial.print("DS18 Air:   ");  Serial.print(currentObs.obsReport.tempX10 = DSsensors.getTempC(airTempAddr)* 10.0);  Serial.print(" °C\t");
     Serial.print("DS18 Case:   ");  Serial.print(DSsensors.getTempC(caseTempAddr));  Serial.print(" °C\t");
     Serial.print(bme.getTemperature_C()); Serial.print(" °C\t");
-    Serial.print(currentObs.obsReport.humidX10 = bme.getHumidity()*10.0);   Serial.print(" %\t\t");
-    Serial.print(currentObs.obsReport.pressX10 = (bme.getPressure_MB()- 1000.0)*10.0);  Serial.print(" hPa\t");
+	Serial.print(bme.getHumidity()); Serial.print(" %\t\t");
+//    Serial.print(currentObs.obsReport.humidX10 = bme.getHumidity()*10.0);   Serial.print(" %\t\t");
+	Serial.print(bme.getPressure_MB()); Serial.print(" hPa\t");
+//    Serial.print(currentObs.obsReport.pressX10 = (bme.getPressure_MB()- 1000.0)*10.0);  Serial.print(" hPa\t");
     Serial.print(totalRainfall);  Serial.print(" mm\t\t");
 //	Serial.print(currentObs.obsReport.rainflX10 = totalRainfall*10.0);  Serial.print(" mm\t\t");
 //	Serial.print(currentObs.obsReport.windspX10 = windSpeed*10.0);   Serial.print(" kph\t");
-  Serial.print(windSpeed);   Serial.print(" kph\t");
+    Serial.print(windSpeed);   Serial.print(" kph\t");
 	Serial.print(currentObs.obsReport.windDir = calDirection);   Serial.println("deg.");
 	
   }
