@@ -8,19 +8,19 @@
 #include <DS1307RTC.h>    // For TinyRTC breakout board
 #include <TimeLib.h>      // For epoch time en/decode
 
-// Set hardware pin assignments & configured constants
-#define TX_Pin 8  // used to indicate web data tx
-#define ONE_WIRE_BUS_PIN 9     //Data bus pin for DS18B20's
+// Set hardware pin assignments & pre-set constants
+#define TX_Pin 8 				 // used to indicate web data tx
+#define ONE_WIRE_BUS_PIN 9 	    //Data bus pin for DS18B20's
 
 #define WindSensor_Pin (2)       //The pin location of the anemometer sensor
 #define WindVane_Pin  (A3)       // The pin connecting to the wind vane sensor
 #define VaneOffset  0		   // The anemometer offset from magnetic north
-#define Bucket_Size  0.2    // mm bucket capacity to trigger tip count
-#define RG11_Pin  3         // Interrupt pin for rain sensor
+#define Bucket_Size  0.2 	   // mm bucket capacity to trigger tip count
+#define RG11_Pin  3        		 // Interrupt pin for rain sensor
 
 // Set timer related settings for sensor sampling & calculation
 #define Timing_Clock  500000    //  0.5sec in millis
-#define Sample_Interval   5		//  = number of Timing_Clock cycles  i.e. 2.5sec
+#define Sample_Interval   5		//  = number of Timing_Clock cycles  i.e. 2.5sec interval
 #define Speed_Conversion  1.4481   // convert rotations to km/h.  = 2.25/(Sample_Interval x Timing_Clock)* 1.609 
 									// refer Davis anemometer technical spec
 
@@ -52,10 +52,10 @@ union obsPayload
 	char	readAccess[sizeof(obsSet)];
 };
 
-bool txState;			// current LED state for tx rx LED
-int vaneValue;          //  raw analog value from wind vane
+bool txState;				// current LED state for tx rx LED
+int vaneValue;         	 	//  raw analog value from wind vane
 int vaneDirection;          //  translated 0-360 direction
-int calDirection;       //  converted value with offset applied
+int calDirection;       	//  converted value with offset applied
 int lastDirValue;          //  last direction value
 
 
@@ -64,7 +64,7 @@ BME280_I2C bme;     // I2C using address 0x77
 
 // Setup a oneWire instance to communicate with OneWire devices
 OneWire oneWire(ONE_WIRE_BUS_PIN);
-DallasTemperature DSsensors(&oneWire);    // Pass the OneWire reference to Dallas Temperature
+DallasTemperature DSsensors(&oneWire);    // Pass the OneWire reference to Dallas Temperature lib
 
 // Assign the addresses of the DS18B20 sensors (determined by reading them previously)
 DeviceAddress airTempAddr = { 0x28, 0x1A, 0x30, 0x94, 0x3A, 0x19, 0x01, 0x55 };
@@ -139,8 +139,7 @@ void loop() {
       print2digits(tm.Minute);
       Serial.write(':');
       print2digits(tm.Second);
-      Serial.write(' ');
-	  Serial.print(currentObs.readAccess);    
+      Serial.write(' ');   
     } else {
       if (RTC.chipPresent()) {
         Serial.println("The DS1307 is stopped.  Please run the SetTime");
@@ -165,6 +164,8 @@ void loop() {
 	Serial.print(currentObs.obsReport.windspX10 = windSpeed*10.0);   Serial.print(" kph\t");
 //  Serial.print(windSpeed);   Serial.print(" kph\t");
 	Serial.print(currentObs.obsReport.windDir = calDirection);   Serial.println("deg.");
+	Serial.println(currentObs.readAccess); 
+ printIt(currentObs.readAccess, sizeof(obsSet));
 	
 	isSampleRequired = false;
   }
@@ -178,7 +179,7 @@ void isr_timer() {
 	if(timerCount == Sample_Interval) {
 		//  5 x 0.5s = 2.5s rotation counting interval
 		// convert to km/h using the formula V=P(2.25/T)*1.609
-		// i.e. V = P(2.25/2.5)*1.609 = P * 1.4481	
+		// i.e. V = P(2.25/2.5)*1.609 = P * 1.4481	   for 2.5s interval
 		windSpeed = rotations * Speed_Conversion;
 		rotations = 0;   
 		txState = !txState;     
@@ -228,3 +229,17 @@ void print2digits(int number)  {
 	}
 	Serial.print(number);
 }
+
+// Print utility for packed structure
+void printIt(char *charArray, int length) {
+  int i;
+	char charMember;
+	Serial.print("buff length:"); Serial.println(length);
+	for (i=0; i<length; i++) {
+		charMember = charArray[i];
+		Serial.println(charMember, BIN);
+	}
+	Serial.println("===========");
+}
+	
+	
