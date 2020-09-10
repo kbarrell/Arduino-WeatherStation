@@ -37,13 +37,13 @@ volatile float totalRainfall;       // total amount of rainfall recorded
 
 // Define structures for handling reporting via TTN
 typedef struct obsSet {
-	time_t 	obsReportTime;    // unix Epoch    32bits
-	int		tempX10;		// observed temp (°C) x 10   ~range -200->600
+	time_t 	obsReportTime;  // unix Epoch    32bits
+	int			tempX10;	// observed temp (°C) x 10   ~range -200->600
 	uint16_t	humidX10;	// observed relative humidty (%) x 10   range 0->1000
-	int		pressX10;		// observed barometric pressure at station level (hPa) - 1000 x 10  ~range -500->500 
+	int		 	pressX10;	// observed barometric pressure at station level (hPa) - 1000 x 10  ~range -500->500 
 	uint16_t	rainflX10;	// observed accumulated rainfall (mm) x10   ~range 0->1200
 	uint16_t	windspX10;	// observed windspeed (km/h) x10 ~range 0->1200
-	int		windDir;		// observed wind direction (compass degress)  range 0->359
+	int			windDir;	// observed wind direction (compass degress)  range 0->359
 } obsSet;
 	
 union obsPayload
@@ -155,17 +155,12 @@ void loop() {
     Serial.print("DS18 Air:   ");  Serial.print(currentObs.obsReport.tempX10 = DSsensors.getTempC(airTempAddr)* 10.0);  Serial.print(" °C\t");
     Serial.print("DS18 Case:   ");  Serial.print(DSsensors.getTempC(caseTempAddr));  Serial.print(" °C\t");
     Serial.print(bme.getTemperature_C()); Serial.print(" °C\t");
-//	Serial.print(bme.getHumidity()); Serial.print(" %\t\t");
     Serial.print(currentObs.obsReport.humidX10 = bme.getHumidity()*10.0);   Serial.print(" %\t\t");
-//	Serial.print(bme.getPressure_MB()); Serial.print(" hPa\t");
     Serial.print(currentObs.obsReport.pressX10 = (bme.getPressure_MB()- 1000.0)*10.0);  Serial.print(" hPa\t");
-//  Serial.print(totalRainfall);  Serial.print(" mm\t\t");
 	Serial.print(currentObs.obsReport.rainflX10 = totalRainfall*10.0);  Serial.print(" mm\t\t");
 	Serial.print(currentObs.obsReport.windspX10 = windSpeed*10.0);   Serial.print(" kph\t");
-//  Serial.print(windSpeed);   Serial.print(" kph\t");
 	Serial.print(currentObs.obsReport.windDir = calDirection);   Serial.println("deg.");
-	Serial.println(currentObs.readAccess); 
- printIt(currentObs.readAccess, sizeof(obsSet));
+//	printIt(currentObs.readAccess, sizeof(obsSet));        //  Check dump of 16 Byte obsSet structure
 	
 	isSampleRequired = false;
   }
@@ -177,15 +172,14 @@ void isr_timer() {
 	timerCount++;
 	
 	if(timerCount == Sample_Interval) {
-		//  5 x 0.5s = 2.5s rotation counting interval
-		// convert to km/h using the formula V=P(2.25/T)*1.609
-		// i.e. V = P(2.25/2.5)*1.609 = P * 1.4481	   for 2.5s interval
+		// convert to km/h using the formula V=P(2.25/T)*1.609 where T = sample interval
+		// i.e. V = P(2.25/2.5)*1.609 = P * Speed_Conversion factor  (=1.4481  for 2.5s interval)
 		windSpeed = rotations * Speed_Conversion;
 		rotations = 0;   
 		txState = !txState;     
-		digitalWrite(TX_Pin, txState);
+		digitalWrite(TX_Pin, txState);      // Transmit LED
 		isSampleRequired = true;
-		timerCount = 0;
+		timerCount = 0;						// Restart the interval count
 	}
 }
 
@@ -239,7 +233,7 @@ void printIt(char *charArray, int length) {
 		charMember = charArray[i];
 		Serial.println(charMember, BIN);
 	}
-	Serial.println("===========");
+	Serial.println("===EndOfBuffer========");
 }
 	
 	
