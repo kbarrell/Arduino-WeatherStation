@@ -30,6 +30,32 @@
 #include <lmic.h>
 #include <hal/hal.h>
 #include <SPI.h>
+#include <cactus_io_BME280_I2C.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+#include "TimerOne.h"     // Timer Interrupt set to 2 sec for read sensors
+#include <math.h>
+#include <Wire.h>         // For accessing RTC
+#include <DS1307RTC.h>    // For TinyRTC breakout board
+#include <TimeLib.h>      // For epoch time en/decode
+
+// Define structures for handling reporting via TTN
+typedef struct obsSet {
+	time_t 	obsReportTime;  // unix Epoch    32bits
+	int			tempX10;	// observed temp (°C) x 10   ~range -200->600
+	uint16_t	humidX10;	// observed relative humidty (%) x 10   range 0->1000
+	int		 	pressX10;	// observed barometric pressure at station level (hPa) - 1000 x 10  ~range -500->500 
+	uint16_t	rainflX10;	// observed accumulated rainfall (mm) x10   ~range 0->1200
+	uint16_t	windspX10;	// observed windspeed (km/h) x10 ~range 0->1200
+	int			windDir;	// observed wind direction (compass degress)  range 0->359
+} obsSet;
+	
+union obsPayload
+{
+	obsSet	obsReport;
+	char	readAccess[sizeof(obsSet)];
+};
 
 //
 // For normal use, we require that you edit the sketch to replace FILLMEIN
@@ -63,7 +89,8 @@ void os_getArtEui (u1_t* buf) { }
 void os_getDevEui (u1_t* buf) { }
 void os_getDevKey (u1_t* buf) { }
 
-static uint8_t mydata[] = "Hello, world!";
+//static uint8_t mydata[] = "Hello, world!";
+static uint8_t mydata[16] = { 0xB8, 0xA8, 0x5A, 0x5F, 0xD7, 0x00, 0xF2, 0x01, 0x8E, 0x00, 0x08, 0x00, 0x1E, 0x00, 0x00, 0x01 };
 static osjob_t sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
@@ -168,7 +195,8 @@ void do_send(osjob_t* j){
         Serial.println(F("OP_TXRXPEND, not sending"));
     } else {
         // Prepare upstream data transmission at the next possible time.
-        LMIC_setTxData2(1, mydata, sizeof(mydata)-1, 0);
+//        LMIC_setTxData2(1, mydata, sizeof(mydata)-1, 0);
+          LMIC_setTxData2(1, mydata, sizeof(mydata), 0);
         Serial.println(F("Packet queued"));
         Serial.print(F("Sending packet on frequency: "));
         Serial.println(LMIC.freq);
