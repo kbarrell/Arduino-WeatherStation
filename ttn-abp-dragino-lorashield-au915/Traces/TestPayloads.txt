@@ -1,6 +1,28 @@
-40B52F002680420001EB2D0BA1F249E1283175622C7F9485F2B867DE
 
-B8A85A5FD700F2018E0008001E0000    = 15 chars 
 
 B8A85A5FD700F2018E0008001E000001   = 16 chars
 40B52F002680200001B80C97EA55E8BFB8C5A438883D00F49BE417688C
+
+
+"field1": 1599776952,
+  "field2": 21.5,
+  "field3": 49.8,
+  "field4": 1014.2,
+  "field5": 0.8,
+  "field6": 3,
+  "field7": 256
+  
+  field1=1599776952&field2=21.5&field3=49.8&field4=1014.2&field5=0.8&field6=3&field7=256
+  
+  https://api.thingspeak.com/update?api_key=EBNJOTACY110NAE4&field3=61.02
+  
+  0FEVI639D6PE8GIG      1144173 WriteAPi 14 Sept 23:14
+  
+  https://au.mathworks.com/help/thingspeak/things_network_ag_data.html
+  
+  GET https://api.thingspeak.com/channels/1144173/feeds.json?api_key=DTNP7P9Q0PE7FGIW&results=2
+  
+  {"created_at":"2020-09-15T21:21:26+10:00","entry_id":38,"field1":"1599776952","field2":null,"field3":"50.0","field4":null,"field5":null,"field6":null,"field7":"13"},
+  {"created_at":"2020-09-15T21:21:58+10:00","entry_id":39,"field1":"1599776952","field2":null,"field3":"51.0","field4":null,"field5":null,"field6":null,"field7":"13"},
+  {"created_at":"2020-09-15T21:24:03+10:00","entry_id":40,"field1":"1599776952","field2":null,"field3":"53.0","field4":null,"field5":null,"field6":null,"field7":"13"},
+  {"created_at":"2020-09-15T21:25:32+10:00","entry_id":41,"field1":"1599776952","field2":null,"field3":"54.0","field4":null,"field5":null,"field6":null,"field7":"13"}]}

@@ -37,7 +37,7 @@
 #include "TimerOne.h"     // Timer Interrupt set to 2 sec for read sensors
 #include <math.h>
 #include <Wire.h>         // For accessing RTC
-#include <DS1307RTC.h>    // For TinyRTC breakout board
+#include <SD2405RTC.h>    // For TinyRTC breakout board
 #include <TimeLib.h>      // For epoch time en/decode
 
 // Define structures for handling reporting via TTN
@@ -90,12 +90,15 @@ void os_getDevEui (u1_t* buf) { }
 void os_getDevKey (u1_t* buf) { }
 
 //static uint8_t mydata[] = "Hello, world!";
-static uint8_t mydata[16] = { 0xB8, 0xA8, 0x5A, 0x5F, 0xD7, 0x00, 0xF2, 0x01, 0x8E, 0x00, 0x08, 0x00, 0x1E, 0x00, 0x00, 0x01 };
+static uint8_t mydata[16] { 0xB8, 0xA8, 0x5A, 0x5F, 0xD7, 0x00, 0xF2, 0x01, 0x8E, 0x00, 0x08, 0x00, 0x1E, 0x00, 0x00, 0x01 };
+
+
+
 static osjob_t sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
-const unsigned TX_INTERVAL = 5;
+const unsigned TX_INTERVAL = 30;
 
 // Pin mapping
 // TL Modifications:
@@ -182,6 +185,8 @@ void onEvent (ev_t ev) {
         case EV_TXSTART:
             Serial.println(F("EV_TXSTART"));
             break;
+			
+			
         default:
             Serial.print(F("Unknown event: "));
             Serial.println((unsigned) ev);
@@ -190,12 +195,22 @@ void onEvent (ev_t ev) {
 }
 
 void do_send(osjob_t* j){
+	tmElements_t  tm;
+  time_t created_time;
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) {
         Serial.println(F("OP_TXRXPEND, not sending"));
     } else {
         // Prepare upstream data transmission at the next possible time.
 //        LMIC_setTxData2(1, mydata, sizeof(mydata)-1, 0);
+//			if (RTC.read(tm))  {
+				RTC.read(tm);
+				created_time = makeTime(tm); 
+//			else Serial.println(F("No RTC return"));
+			mydata[0] = created_time & 0xFF;
+			mydata[1] = (created_time >> 8) & 0xFF;
+			mydata[2] = (created_time >> 16) & 0xFF;
+			mydata[3] = (created_time >> 24) & 0xFF;
           LMIC_setTxData2(1, mydata, sizeof(mydata), 0);
         Serial.println(F("Packet queued"));
         Serial.print(F("Sending packet on frequency: "));
