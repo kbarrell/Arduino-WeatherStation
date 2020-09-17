@@ -196,21 +196,20 @@ void onEvent (ev_t ev) {
 
 void do_send(osjob_t* j){
 	tmElements_t  tm;
-  time_t created_time;
+	time_t created_time;
+	int i;
+
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) {
         Serial.println(F("OP_TXRXPEND, not sending"));
     } else {
         // Prepare upstream data transmission at the next possible time.
-//        LMIC_setTxData2(1, mydata, sizeof(mydata)-1, 0);
-//			if (RTC.read(tm))  {
 				RTC.read(tm);
 				created_time = makeTime(tm); 
 //			else Serial.println(F("No RTC return"));
-			mydata[0] = created_time & 0xFF;
-			mydata[1] = (created_time >> 8) & 0xFF;
-			mydata[2] = (created_time >> 16) & 0xFF;
-			mydata[3] = (created_time >> 24) & 0xFF;
+		//  Arrange timestamp in correct byte order
+			for (i=0; i < 4; i++ )
+				mydata[i] = (created_time >> i*8) & 0xFF;    //swap bytes for upload
           LMIC_setTxData2(1, mydata, sizeof(mydata), 0);
         Serial.println(F("Packet queued"));
         Serial.print(F("Sending packet on frequency: "));
@@ -222,7 +221,7 @@ void do_send(osjob_t* j){
 void setup() {
 //    pinMode(13, OUTPUT);
     while (!Serial); // wait for Serial to be initialized
-    Serial.begin(115200);
+    Serial.begin(9600);
     delay(100);     // per sample code on RF_95 test
     Serial.println(F("Starting"));
 
