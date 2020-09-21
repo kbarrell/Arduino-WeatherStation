@@ -49,9 +49,7 @@ typedef struct obsSet {
 	uint16_t	rainflX10;	// observed accumulated rainfall (mm) x10   ~range 0->1200
 	uint16_t	windspX10;	// observed windspeed (km/h) x10 ~range 0->1200
 	int			windDir;	// observed wind direction (compass degress)  range 0->359
- }obsSet;
-	
-	
+} obsSet;
 	
 union obsPayload
 {
@@ -208,12 +206,10 @@ void do_send(osjob_t* j){
         // Prepare upstream data transmission at the next possible time.
 				RTC.read(tm);
 				created_time = makeTime(tm); 
-				Serial.println(tm.Second);
-//				Serial.println(created_time);
 //			else Serial.println(F("No RTC return"));
-//		  Arrange timestamp in correct byte order
-//			for (i=0; i < 4; i++ )
-//				mydata[i] = (created_time >> i*8) & 0xFF;    //swap bytes for upload
+		//  Arrange timestamp in correct byte order
+			for (i=0; i < 4; i++ )
+				mydata[i] = (created_time >> i*8) & 0xFF;    //swap bytes for upload
           LMIC_setTxData2(1, mydata, sizeof(mydata), 0);
         Serial.println(F("Packet queued"));
         Serial.print(F("Sending packet on frequency: "));

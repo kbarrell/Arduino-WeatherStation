@@ -4,7 +4,7 @@
 GravityRtc rtc;     //RTC Initialization
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   
   
   rtc.setup();
