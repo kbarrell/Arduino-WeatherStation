@@ -37,12 +37,12 @@
 #include "TimerOne.h"     // Timer Interrupt set to 2 sec for read sensors
 #include <math.h>
 #include <Wire.h>         // For accessing RTC
-#include <SD2405RTC.h>    // For TinyRTC breakout board
+#include <SD2405RTC.h>    // For Gravity RTC breakout board
 #include <TimeLib.h>      // For epoch time en/decode
 
 // Define structures for handling reporting via TTN
 typedef struct obsSet {
-	time_t 	obsReportTime;  // unix Epoch    32bits
+	time_t 	obsReportTime;  // unixtime    u32bits
 	int			tempX10;	// observed temp (°C) x 10   ~range -200->600
 	uint16_t	humidX10;	// observed relative humidty (%) x 10   range 0->1000
 	int		 	pressX10;	// observed barometric pressure at station level (hPa) - 1000 x 10  ~range -500->500 
@@ -198,7 +198,7 @@ void onEvent (ev_t ev) {
 
 void do_send(osjob_t* j){
 	tmElements_t  tm;
-	time_t created_time;
+	time_t obs_time;
 	int i;
 
     // Check if there is not a current TX/RX job running
@@ -206,14 +206,11 @@ void do_send(osjob_t* j){
         Serial.println(F("OP_TXRXPEND, not sending"));
     } else {
         // Prepare upstream data transmission at the next possible time.
-				RTC.read(tm);
-				created_time = makeTime(tm); 
-				Serial.println(tm.Second);
-//				Serial.println(created_time);
-//			else Serial.println(F("No RTC return"));
+		obs_time = now();
 //		  Arrange timestamp in correct byte order
-//			for (i=0; i < 4; i++ )
-//				mydata[i] = (created_time >> i*8) & 0xFF;    //swap bytes for upload
+			for (i=0; i < 4; i++ )  {
+				mydata[i] = (obs_time >> i*8) & 0xFF;    //re-order bytes for upload
+			}
           LMIC_setTxData2(1, mydata, sizeof(mydata), 0);
         Serial.println(F("Packet queued"));
         Serial.print(F("Sending packet on frequency: "));
@@ -228,6 +225,8 @@ void setup() {
     Serial.begin(115200);
     delay(100);     // per sample code on RF_95 test
     Serial.println(F("Starting"));
+	setSyncProvider(RTC.get);
+	setSyncInterval(500);     // resync system time to RTC every 500 sec
 
     #ifdef VCC_ENABLE
     // For Pinoccio Scout boards
