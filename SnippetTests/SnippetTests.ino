@@ -8,7 +8,7 @@ typedef struct obsSet {
 	time_t 	obsReportTime;  // unixtime    u32bits
 	int			tempX10;	// observed temp (°C) x 10   ~range -200->600
 	uint16_t	humidX10;	// observed relative humidty (%) x 10   range 0->1000
-	int		 	pressX10;	// observed barometric pressure at station level (hPa) - 1000 x 10  ~range -500->500 
+	int		 	pressX10;	// observed barometric pressure at station level (hPa) x 10  ~range 8700-> 11000 
 	uint16_t	rainflX10;	// observed accumulated rainfall (mm) x10   ~range 0->1200
 	uint16_t	windspX10;	// observed windspeed (km/h) x10 ~range 0->1200
 	int			windDir;	// observed wind direction (compass degress)  range 0->359
@@ -19,8 +19,8 @@ typedef struct obsSet {
 union obsPayload
 {
 	obsSet	obsReport;
-	char	readAccess[sizeof(obsSet)];
-};
+	uint8_t	readAccess[sizeof(obsSet)];
+} uval;
 
 static uint8_t mydata[5] { 0xB8, 0xA0, 0xA1, 0xA2, 0xD7};
 
@@ -69,10 +69,15 @@ void setup()  {
   Serial.println(system_time);
   digitalClockDisplay();
   printBuffer();
-  for (i=0; i<4; i++) {
-	  mydata[i] = (created_time >> i*8) & 0xFF;
-	 printBuffer(); 
-  }
+  uval.obsReport.obsReportTime = created_time;
+  uval.obsReport.pressX10 = 10145;
+  printBuffer();
+  
+//  for (i=0; i<4; i++) {
+//	  mydata[3-i] = (created_time >> (i*8) & 0xFF;
+//		uval.readAccess[3-i] = (created_time >> i*8) & 0xFF;
+//	 printBuffer(); 
+//  }
 }
 
 void loop()
@@ -82,9 +87,9 @@ void loop()
 
 void printBuffer() {
 	int j;
-	for (j=0; j<5; j++) {
-		Serial.print(mydata[j], HEX);
-    if (j == 3) Serial.print(' ');
+	for (j=0; j<sizeof(uval.readAccess); j++) {
+		Serial.print(uval.readAccess[j], HEX);
+    Serial.print(' ');
 	  }
 	  Serial.println();
 }

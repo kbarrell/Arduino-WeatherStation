@@ -42,13 +42,13 @@
 
 // Define structures for handling reporting via TTN
 typedef struct obsSet {
-	time_t 	obsReportTime;  // unixtime    u32bits
-	int			tempX10;	// observed temp (°C) x 10   ~range -200->600
+	time_t 	obsReportTime;  // unixtime    u32bits   ref UTC
+	uint16_t	tempX10;	// observed temp (°C) +100 x 10   ~range 800->1600
 	uint16_t	humidX10;	// observed relative humidty (%) x 10   range 0->1000
-	int		 	pressX10;	// observed barometric pressure at station level (hPa) - 1000 x 10  ~range -500->500 
+	uint16_t 	pressX10;	// observed barometric pressure at station level (hPa) x 10  ~range 8700->11000 
 	uint16_t	rainflX10;	// observed accumulated rainfall (mm) x10   ~range 0->1200
 	uint16_t	windspX10;	// observed windspeed (km/h) x10 ~range 0->1200
-	int			windDir;	// observed wind direction (compass degress)  range 0->359
+	uint16_t	windDir;	// observed wind direction (compass degress)  range 0->359
  }obsSet;
 	
 	
@@ -56,8 +56,8 @@ typedef struct obsSet {
 union obsPayload
 {
 	obsSet	obsReport;
-	char	readAccess[sizeof(obsSet)];
-};
+	uint8_t	readAccess[sizeof(obsSet)];
+}payload;
 
 //
 // For normal use, we require that you edit the sketch to replace FILLMEIN
@@ -92,7 +92,7 @@ void os_getDevEui (u1_t* buf) { }
 void os_getDevKey (u1_t* buf) { }
 
 //static uint8_t mydata[] = "Hello, world!";
-static uint8_t mydata[16] { 0xB8, 0xA8, 0x5A, 0x5F, 0xD7, 0x00, 0xF2, 0x01, 0x8E, 0x00, 0x08, 0x00, 0x1E, 0x00, 0x00, 0x01 };
+//static uint8_t mydata[16] { 0xB8, 0xA8, 0x5A, 0x5F, 0xD7, 0x00, 0xF2, 0x01, 0x8E, 0x00, 0x08, 0x00, 0x1E, 0x00, 0x00, 0x01 };
 
 
 
@@ -197,21 +197,20 @@ void onEvent (ev_t ev) {
 }
 
 void do_send(osjob_t* j){
-	tmElements_t  tm;
-	time_t obs_time;
-	int i;
 
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) {
         Serial.println(F("OP_TXRXPEND, not sending"));
     } else {
         // Prepare upstream data transmission at the next possible time.
-		obs_time = now();
-//		  Arrange timestamp in correct byte order
-			for (i=0; i < 4; i++ )  {
-				mydata[i] = (obs_time >> i*8) & 0xFF;    //re-order bytes for upload
-			}
-          LMIC_setTxData2(1, mydata, sizeof(mydata), 0);
+		payload.obsReport.obsReportTime = now();
+		payload.obsReport.pressX10 = 10143;
+		payload.obsReport.tempX10 = 936;
+		payload.obsReport.humidX10 = 678;
+		payload.obsReport.rainflX10 = 44;
+		payload.obsReport.windspX10 = 45;
+		payload.obsReport.windDir = 123;
+        LMIC_setTxData2(1, payload.readAccess, sizeof(payload.readAccess), 0);
         Serial.println(F("Packet queued"));
         Serial.print(F("Sending packet on frequency: "));
         Serial.println(LMIC.freq);
