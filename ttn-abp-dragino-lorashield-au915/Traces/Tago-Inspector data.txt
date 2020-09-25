@@ -1,6 +1,77 @@
 2020-09-17 22:10:54: [POST] HTTP Request: From: 3.226.242.201 [axios/0.19.2] - Content-Type: application/json;charset=utf-8 - Token Ending: b25df
 2020-09-17 22:10:54: Raw payload: [{"variable":"ttn_payload","value":"{\"app_id\":\"winston_weather\",\"dev_id\":\"weather_station01\",\"hardware_serial\":\"006387B26E041955\",\"port\":1,\"counter\":15,\"payload_raw\":\"E9DE635FD700F2018E0008001E000001\",\"payload_fields\":{\"field1\":1600380649,\"field2\":21.5,\"field3\":49.8,\"field4\":1014.2,\"field5\":0.8,\"field6\":3,\"field7\":256},\"metadata\":{\"time\":\"2020-09-17T12:10:54.165741982Z\",\"frequency\":916.8,\"modulation\":\"LORA\",\"data_rate\":\"SF7BW125\",\"coding_rate\":\"4/5\",\"gateways\":[{\"gtw_id\":\"eui-a840411db31c4150\",\"timestamp\":1184985090,\"time\":\"2020-09-17T12:10:54.180293Z\",\"channel\":0,\"rssi\":-64,\"snr\":10,\"rf_chain\":0,\"latitude\":-38.2929,\"longitude\":144.996}],\"latitude\":-38.292618,\"longitude\":144.99622,\"altitude\":105,\"location_source\":\"registry\"}}","serie":15}]
-2020-09-17 22:10:54: Result of [Custom The Things Network ] payload parser: [{"variable":"ttn_payload","value":"{\"app_id\":\"winston_weather\",\"dev_id\":\"weather_station01\",\"hardware_serial\":\"006387B26E041955\",\"port\":1,\"counter\":15,\"payload_raw\":\"E9DE635FD700F2018E0008001E000001\",\"payload_fields\":{\"field1\":1600380649,\"field2\":21.5,\"field3\":49.8,\"field4\":1014.2,\"field5\":0.8,\"field6\":3,\"field7\":256},\"metadata\":{\"time\":\"2020-09-17T12:10:54.165741982Z\",\"frequency\":916.8,\"modulation\":\"LORA\",\"data_rate\":\"SF7BW125\",\"coding_rate\":\"4/5\",\"gateways\":[{\"gtw_id\":\"eui-a840411db31c4150\",\"timestamp\":1184985090,\"time\":\"2020-09-17T12:10:54.180293Z\",\"channel\":0,\"rssi\":-64,\"snr\":10,\"rf_chain\":0,\"latitude\":-38.2929,\"longitude\":144.996}],\"latitude\":-38.292618,\"longitude\":144.99622,\"altitude\":105,\"location_source\":\"registry\"}}","serie":15},{"variable":"field1","value":1600380649,"serie":15},{"variable":"field2","value":21.5,"serie":15},{"variable":"field3","value":49.8,"serie":15},{"variable":"field4","value":1014.2,"serie":15},{"variable":"field5","value":0.8,"serie":15},{"variable":"field6","value":3,"serie":15},{"variable":"field7","value":256,"serie":15},{"variable":"decoded_payload","value":"E9DE635FD700F2018E0008001E000001","serie":15},{"variable":"gtw_location","value":"-38.2929, 144.996","location":{"lat":-38.2929,"lng":144.996},"serie":"jobd247i4lnfd5ngohrn08"},{"variable":"gtw_id","value":"eui-a840411db31c4150","serie":"jobd247i4lnfd5ngohrn08"},{"variable":"timestamp","value":1184985090,"serie":"jobd247i4lnfd5ngohrn08"},{"variable":"rssi","value":-64,"serie":"jobd247i4lnfd5ngohrn08"},{"variable":"snr","value":10,"serie":"jobd247i4lnfd5ngohrn08"},{"variable":"frequency","value":916.8,"serie":15},{"variable":"data_rate","value":"SF7BW125","serie":15},{"variable":"coding_rate","value":"4/5","serie":15},{"variable":"latitude","value":-38.292618,"serie":15},{"variable":"longitude","value":144.99622,"serie":15},{"variable":"altitude","value":105,"serie":15},{"variable":"location_source","value":"registry","serie":15},{"variable":"dev_id","value":"weather_station01","serie":15},{"variable":"hardware_serial","value":"006387B26E041955","serie":15},{"variable":"port","value":1,"serie":15},{"variable":"counter","value":15,"serie":15}]
+2020-09-17 22:10:54: Result of [Custom The Things Network ] payload parser: 
+[
+	"variable":"ttn_payload","value":"
+	{
+		\"app_id\":\"winston_weather\",
+		\"dev_id\":\"weather_station01\",
+		\"hardware_serial\":\"006387B26E041955\",
+		\"port\":1,
+		\"counter\":15,
+		\"payload_raw\":\"E9DE635FD700F2018E0008001E000001\",
+		\"payload_fields\":
+		{	\"field1\":1600380649,
+			\"field2\":21.5,
+			\"field3\":49.8,
+			\"field4\":1014.2,
+			\"field5\":0.8,
+			\"field6\":3,
+			\"field7\":256
+		},
+		\"metadata\":
+		{	\"time\":\"2020-09-17T12:10:54.165741982Z\",
+			\"frequency\":916.8,
+			\"modulation\":\"LORA\",
+			\"data_rate\":\"SF7BW125\",
+			\"coding_rate\":\"4/5\",
+			"gateways\":
+			[
+				{
+				"gtw_id\":\"eui-a840411db31c4150\",
+				\"timestamp\":1184985090,
+				\"time\":\"2020-09-17T12:10:54.180293Z\",
+				\"channel\":0,
+				\"rssi\":-64,
+				\"snr\":10,
+				\"rf_chain\":0,
+				\"latitude\":-38.2929,
+				\"longitude\":144.996
+				}
+			],
+			\"latitude\":-38.292618,
+			\"longitude\":144.99622,
+			\"altitude\":105,
+			\"location_source\":\"registry\"
+		}
+	}",
+	"serie":15},
+	{"variable":"field1","value":1600380649,"serie":15},
+	{"variable":"field2","value":21.5,"serie":15},
+	{"variable":"field3","value":49.8,"serie":15},
+	{"variable":"field4","value":1014.2,"serie":15},
+	{"variable":"field5","value":0.8,"serie":15},
+	{"variable":"field6","value":3,"serie":15},
+	{"variable":"field7","value":256,"serie":15},
+	{"variable":"decoded_payload","value":"E9DE635FD700F2018E0008001E000001","serie":15},
+	{"variable":"gtw_location","value":"-38.2929, 144.996","location":{"lat":-38.2929,"lng":144.996},"serie":"jobd247i4lnfd5ngohrn08"},
+	{"variable":"gtw_id","value":"eui-a840411db31c4150","serie":"jobd247i4lnfd5ngohrn08"},
+	{"variable":"timestamp","value":1184985090,"serie":"jobd247i4lnfd5ngohrn08"},
+	{"variable":"rssi","value":-64,"serie":"jobd247i4lnfd5ngohrn08"},
+	{"variable":"snr","value":10,"serie":"jobd247i4lnfd5ngohrn08"},
+	{"variable":"frequency","value":916.8,"serie":15},
+	{"variable":"data_rate","value":"SF7BW125","serie":15},
+	{"variable":"coding_rate","value":"4/5","serie":15},
+	{"variable":"latitude","value":-38.292618,"serie":15},
+	{"variable":"longitude","value":144.99622,"serie":15},
+	{"variable":"altitude","value":105,"serie":15},
+	{"variable":"location_source","value":"registry","serie":15},
+	{"variable":"dev_id","value":"weather_station01","serie":15},
+	{"variable":"hardware_serial","value":"006387B26E041955","serie":15},
+	{"variable":"port","value":1,"serie":15},
+	{"variable":"counter","value":15,"serie":15}
+]
+
 2020-09-17 22:10:54: Bucket [14e2]: 25 Data Added
 ------
 2020-09-17 22:10:54: [POST] HTTP Request: From: 3.226.242.201 [axios/0.19.2] - Content-Type: application/json;charset=utf-8 - Token Ending: b25df

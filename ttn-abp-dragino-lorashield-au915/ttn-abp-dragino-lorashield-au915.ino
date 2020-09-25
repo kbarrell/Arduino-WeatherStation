@@ -59,6 +59,16 @@ union obsPayload
 	uint8_t	readAccess[sizeof(obsSet)];
 }payload;
 
+//  Test data for uploading - an hour's worth (at 2 min sample frequency)
+static int observations[6][15] {
+	{900, 953, 1012, 1067, 1118, 1164, 1216, 1266, 1347, 1398, 1441, 1492, 1537, 1588, 1631},  //temp
+	{8703, 8834, 8964, 9091, 9205, 9337, 9468, 9591, 9720, 9844, 9977, 10104, 10231, 10368, 10491},  //press
+	{233, 282, 334, 381, 438, 487, 539, 585, 633, 671, 724, 774, 824, 877, 944},   //humidity
+	{0, 0, 12, 22, 33, 48, 55, 101, 151, 233, 0, 0, 121, 188, 0},   //rainfall
+	{0, 0, 22, 26, 27, 13, 0, 0, 55, 105, 310, 555, 845, 201, 41},  //windspeed
+	{300, 322, 294, 310, 340, 350, 10, 15, 12, 200, 210, 175, 170, 180, 260}   //wind direction
+};
+
 //
 // For normal use, we require that you edit the sketch to replace FILLMEIN
 // with values assigned by the TTN console. However, for regression tests,
@@ -100,7 +110,7 @@ static osjob_t sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
-const unsigned TX_INTERVAL = 30;
+const unsigned TX_INTERVAL = 120;
 
 // Pin mapping
 // TL Modifications:
@@ -198,22 +208,25 @@ void onEvent (ev_t ev) {
 
 void do_send(osjob_t* j){
 
+static int sample = 0;
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) {
         Serial.println(F("OP_TXRXPEND, not sending"));
     } else {
         // Prepare upstream data transmission at the next possible time.
+		sample %= 15;     // loop through test data arrays
 		payload.obsReport.obsReportTime = now();
-		payload.obsReport.pressX10 = 10143;
-		payload.obsReport.tempX10 = 936;
-		payload.obsReport.humidX10 = 678;
-		payload.obsReport.rainflX10 = 44;
-		payload.obsReport.windspX10 = 45;
-		payload.obsReport.windDir = 123;
+		payload.obsReport.tempX10 = observations[0][sample];
+		payload.obsReport.pressX10 = observations[1][sample];
+		payload.obsReport.humidX10 = observations[2][sample];
+		payload.obsReport.rainflX10 = observations[3][sample];
+		payload.obsReport.windspX10 = observations[4][sample];
+		payload.obsReport.windDir = observations[5][sample];
         LMIC_setTxData2(1, payload.readAccess, sizeof(payload.readAccess), 0);
         Serial.println(F("Packet queued"));
         Serial.print(F("Sending packet on frequency: "));
         Serial.println(LMIC.freq);
+		sample += 1;
     }
     // Next TX is scheduled after TX_COMPLETE event.
 }
