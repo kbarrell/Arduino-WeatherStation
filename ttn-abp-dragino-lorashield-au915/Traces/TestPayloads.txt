@@ -26,3 +26,110 @@ B8A85A5FD700F2018E0008001E000001   = 16 chars
   {"created_at":"2020-09-15T21:21:58+10:00","entry_id":39,"field1":"1599776952","field2":null,"field3":"51.0","field4":null,"field5":null,"field6":null,"field7":"13"},
   {"created_at":"2020-09-15T21:24:03+10:00","entry_id":40,"field1":"1599776952","field2":null,"field3":"53.0","field4":null,"field5":null,"field6":null,"field7":"13"},
   {"created_at":"2020-09-15T21:25:32+10:00","entry_id":41,"field1":"1599776952","field2":null,"field3":"54.0","field4":null,"field5":null,"field6":null,"field7":"13"}]}
+  
+  3a889e520c387a93269ea5acf2c79303304bf3fe48d13420dc06ddf9dc6bd0a63619eac35d4e57b1bf1c89f554dba08fa8ec2183b2a7bed4ce07a12684e3bc35  Apache-NetBeans-12.1-bin-windows-x64.exe
+  
+  -----BEGIN PGP SIGNATURE-----
+
+iQJKBAABCgA0FiEEewN+6+Dw3t/uZbaYNwOsOJoSqdQFAl9Piz4WHG5laWxjc21p
+dGhAYXBhY2hlLm9yZwAKCRA3A6w4mhKp1I9PD/wNwvbMZKvZ5dvGhdPEmluxzfQl
+ysBYpOegPPn4SFRPPS3W4orK8o6pBqHflozbgNTN8XeHLNW1P64f83lw2AVDWgqk
+gVMmy/z2kfE6eE1S+eJVH/mzNHzdOV/M8WriD4GU1VNhzWOmWV+xTAnnuaMyFCG7
+jYX52m0DA9LqtQdvOYaOQIq7v+W+0TZOhhsaMFnjTw9jtbPbLXQHyeXvFRRVBTQz
+37OC9A8dTp9qoRdQtFZkcqYxYcqC3GUsdnIIHKcKcRQsISEhxri7Bkxk0BJU/FFo
+ZoQi5R/re/yuy5pTpYD06Y8gpfJwOfEx3Ep2bcLJFtuUwc5kqWvzJFbYQ59zijKi
+KTfgLWFQk6ODaPCmQhur/CvgrcpBrYGGymm+/2ED04MCQhhpHUY2lVrAAKpSjLgm
+WKtbmITP9w3x8v0LMk0dwfjiKZ2u0XDq+iNZ+lU3ONoMi1PUev3dW1FwvbGGXGve
+I//jAzd0QZ6A7B55vfiDRK+OY8uDdLujN7EpTYrLVpRy5RUjH1zZUFX+jOSr1+ZD
+ZTg6Wh4ZVY4dperrvO2TIuMF+b/XVf3NAeTTXpoUsl91p/0EoOerxEmNNN7HC22m
+2drYm5q9R35SjwS+Rt+/AK3OTOnwSsSu+7o82t6LB38YU296YOu1qML/UsS+FurX
+xZwWvXIMaD+cncH3mA==
+=80FB
+-----END PGP SIGNATURE-----
+http://wow.metoffice.gov.uk/automaticreading?siteid=6cfab1ed-faff-ea11-b5d9-0003ff599499&siteAuthenticationKey=173954&dateutc=2020-09-26+23%3A45%3A55&winddir=230&humidity=90&tempc=12&softwaretype=weathersoftware1.0
+&windspeedmph=12
+&windgustmph=12
+&windgustdir=25
+&humidity=90
+&dewptf=68.2
+&tempc=12
+&rainin=0
+&dailyrainin=5
+&baromin=29.1
+&soiltempf=25
+&soilmoisture=25
+&visibility=25
+&softwaretype=weathersoftware1.0
+
+http://wow.metoffice.gov.uk/automaticreading?
+siteid=6cfab1ed-faff-ea11-b5d9-0003ff599499
+&siteAuthenticationKey=173954
+&dateutc=2020-09-26+23%3A45%3A55
+&winddir=230
+&windspeedmph=12
+&windgustmph=12
+&windgustdir=25
+&humidity=90
+&dewptf=68.2
+&tempf=70
+&rainin=0
+&dailyrainin=5
+&baromin=29.1
+&soiltempf=25
+&soilmoisture=25
+&visibility=25
+&softwaretype=weathersoftware1.0
+
+http://wow.metoffice.gov.uk/automaticreading?siteid=6cfab1ed-faff-ea11-b5d9-0003ff599499&dateutc=2020-09-27+02%3A16%3A26&humidity=90&tempf=59.4&softwaretype=custom0.1&winddir=245&windspeedmph=9.1&rainin=.04&baromin=30.02&dailyrainin=.09
+
+ // This is a filter to get the maximum value of the variable temperature in the last day
+  const maxFilter = {
+    variable: "field2",
+    query: "max",
+    start_date: "1 day",
+  };
+
+  const [max] = await device.getData(maxFilter);
+
+  if (max) {
+    const maxValue = {
+      variable: "temperature_maximum",
+      value: max.value,
+      unit: "F",
+    };
+
+    await device
+      .sendData(maxValue)
+      .then(context.log("Temperature Maximum Updated"));
+  } else {
+    context.log("Maximum value not found");
+  }
+
+  // This is a filter to get the last 1000 values of the variable temperature in the last day
+  const avgFilter = {
+    variable: "field2",
+    qty: 10,
+    start_date: "1 day",
+  };
+
+  const dataAvgArray = await device.getData(avgFilter);
+
+  if (dataAvgArray.length) {
+    let temperatureSum = dataAvgArray.reduce((previousValue, currentValue) => {
+      return previousValue + Number(currentValue.value);
+    }, 0);
+
+    temperatureSum = temperatureSum / dataAvgArray.length;
+
+    const avgValue = {
+      variable: "temperature_average",
+      value: temperatureSum,
+      unit: "F",
+    };
+
+    await device
+      .sendData(avgValue)
+      .then(context.log("Temperature Average Updated"));
+  } else {
+    context.log("No result found for the avg calculation");
+  }

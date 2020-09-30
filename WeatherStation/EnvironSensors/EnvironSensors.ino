@@ -156,7 +156,7 @@ void loop() {
     Serial.print("DS18 Case:   ");  Serial.print(DSsensors.getTempC(caseTempAddr));  Serial.print(" °C\t");
     Serial.print(bme.getTemperature_C()); Serial.print(" °C\t");
     Serial.print(currentObs.obsReport.humidX10 = bme.getHumidity()*10.0);   Serial.print(" %\t\t");
-    Serial.print(currentObs.obsReport.pressX10 = (bme.getPressure_MB()- 1000.0)*10.0);  Serial.print(" hPa\t");
+    Serial.print(currentObs.obsReport.pressX10 = (bme.getPressure_MB()*10.0);  Serial.print(" hPa\t");
 	Serial.print(currentObs.obsReport.rainflX10 = totalRainfall*10.0);  Serial.print(" mm\t\t");
 	Serial.print(currentObs.obsReport.windspX10 = windSpeed*10.0);   Serial.print(" kph\t");
 	Serial.print(currentObs.obsReport.windDir = calDirection);   Serial.println("deg.");
