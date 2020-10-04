@@ -27,7 +27,7 @@
  *
  *******************************************************************************/
 
-#include <lmic.h>
+#include <lmic.h>			//  MCCI.   TODO  latest library verions update
 #include <hal/hal.h>
 #include <SPI.h>
 #include <cactus_io_BME280_I2C.h>
@@ -37,51 +37,91 @@
 #include "TimerOne.h"     // Timer Interrupt set to 2 sec for read sensors
 #include <math.h>
 #include <Wire.h>         // For accessing RTC
-#include <SD2405RTC.h>    // For Gravity RTC breakout board
+#include <SD2405RTC.h>    // For Gravity RTC breakout board.   Set RTC to UTC time
 #include <TimeLib.h>      // For epoch time en/decode
+#include <Timezone.h>	  // For AU Eastern STD/DST so that daily readings are 24hr to 9am (local)
+
+// Sensor-related definitions
+// Set hardware pin assignments & pre-set constants
+#define TX_Pin 8 				 // used to indicate web data tx
+#define ONE_WIRE_BUS_PIN 29 	    //Data bus pin for DS18B20's
+
+#define WindSensor_Pin (31)       //The pin location of the anemometer sensor
+#define WindVane_Pin  (A13)       // The pin connecting to the wind vane sensor
+#define VaneOffset  0		   // The anemometer offset from magnetic north
+#define Bucket_Size  0.2 	   // mm bucket capacity to trigger tip count
+#define RG11_Pin  33        		 // Interrupt pin for rain sensor
+#define BounceInterval  15		// Number of ms to allow for debouncing
+
+// Set timer related settings for sensor sampling & calculation
+#define Timing_Clock  500000    //  0.5sec in millis
+#define Sample_Interval   5		//  = number of Timing_Clock cycles  i.e. 2.5sec interval
+#define Report_Interval   120    //  = number of sample intervals contributing to each upload report (each 5 min)
+#define Speed_Conversion  1.4481   // convert rotations to km/h.  = 2.25/(Sample_Interval x Timing_Clock)* 1.609 
+									// refer Davis anemometer technical spec
+									
+volatile bool isSampleRequired;    // set true every Sample_Interval.   Get wind speed
+volatile unsigned int timerCount;  // used to determine when Sample_Interval is reached
+volatile unsigned int sampleCount;	// used to determin when Report_Interval is reached
+volatile unsigned long rotations;  // cup rotation counter for wind speed calcs
+volatile unsigned long contactBounceTime;  // Timer to avoid contact bounce in wind speed sensor
+volatile float windSpeed, windGust;        // speed in km per hour
+
+volatile unsigned long tipCount;   // rain bucket tipcounter used in interrupt routine
+volatile unsigned long contactTime; // timer to manage contact bounce in interrupt routine
+volatile float sampleRainfall;       // total amount of rainfall recorded in sample period (2.5s)
+volatile float obsReportRainfall;    // total amount of rainfall in the reporting period  (5 min)
+volatile float dailyRainfall;		//  total amount of rainfall in 24 hrs to 9am (local time)
 
 // Define structures for handling reporting via TTN
 typedef struct obsSet {
-	time_t 	obsReportTime;  // unixtime    u32bits   ref UTC
-	uint16_t	tempX10;	// observed temp (°C) +100 x 10   ~range 800->1600
+	uint16_t 	windGustX10; // observed windgust speed (km/h) X10  ~range 0 -> 1200
+	uint16_t	windGustDir; // observed wind direction of Gust (compass degrees)  0 -> 359
+	uint16_t	tempX10;	// observed temp (°C) +100 x 10   ~range -200->600
 	uint16_t	humidX10;	// observed relative humidty (%) x 10   range 0->1000
-	uint16_t 	pressX10;	// observed barometric pressure at station level (hPa) x 10  ~range 8700->11000 
+	uint16_t 	pressX10;	// observed barometric pressure at station level (hPa)  x 10  ~range 8700 -> 11000 
 	uint16_t	rainflX10;	// observed accumulated rainfall (mm) x10   ~range 0->1200
 	uint16_t	windspX10;	// observed windspeed (km/h) x10 ~range 0->1200
-	uint16_t	windDir;	// observed wind direction (compass degress)  range 0->359
- }obsSet;
-	
-	
-	
+	uint16_t	windDir;	// observed wind direction (compass degrees)  range 0->359
+	uint16_t	dailyRainX10; //  accumulated rainfall (mm) X10 for period to 9am daily
+ }OBSSET;
+		
 union obsPayload
 {
-	obsSet	obsReport;
+	OBSSET	obsReport;
 	uint8_t	readAccess[sizeof(obsSet)];
 }payload;
 
+// AU Eastern Time Zone (Sydney, Melbourne)   Use next 3 lines for one time setup to be written to EEPROM
+//TimeChangeRule auEDST = {"AEDT", First, Sun, Oct, 2, 660};    //Daylight time = UTC + 11:00 hours
+//TimeChangeRule auESTD = {"AEST", First, Sun, Apr, 2, 600};     //Standard time = UTC + 10:00 hours
+//Timezone auEastern(auEDST, auESTD);
+
+// If TimeChangeRules are already stored in EEPROM, comment out the three
+// lines above and uncomment the line below.
+Timezone auEastern(100);       //assumes rules stored at EEPROM address 100 & that RTC set to UTC
+TimeChangeRule *tcr;		//pointer to the timechange rule
+time_t utc, local;
+
+int  currentObs, reportObs;   //References which obsPayload [0,1 or 2]is being filled etc. 
+bool txState;				// current LED state for tx rx LED
+int vaneValue;         	 	//  raw analog value from wind vane
+int vaneDirection;          //  translated 0-360 direction
+int calDirection, calGustDirn;     	//  converted value with offset applied
+int lastDirValue;          //  last direction value
+
 //  Test data for uploading - an hour's worth (at 2 min sample frequency)
-static int observations[6][15] {
+static int observations[7][15] {
 	{900, 953, 1012, 1067, 1118, 1164, 1216, 1266, 1347, 1398, 1441, 1492, 1537, 1588, 1631},  //temp
 	{8703, 8834, 8964, 9091, 9205, 9337, 9468, 9591, 9720, 9844, 9977, 10104, 10231, 10368, 10491},  //press
 	{233, 282, 334, 381, 438, 487, 539, 585, 633, 671, 724, 774, 824, 877, 944},   //humidity
 	{0, 0, 12, 22, 33, 48, 55, 101, 151, 233, 0, 0, 121, 188, 0},   //rainfall
 	{0, 0, 22, 26, 27, 13, 0, 0, 55, 105, 310, 555, 845, 201, 41},  //windspeed
-	{300, 322, 294, 310, 340, 350, 10, 15, 12, 200, 210, 175, 170, 180, 260}   //wind direction
+	{300, 322, 294, 310, 340, 350, 10, 15, 12, 200, 210, 175, 170, 180, 260},   //wind direction
+	{0, 0, 12, 22, 33, 48, 55, 101, 151, 233, 233, 233, 452, 0, 188}      // dailyrain
 };
 
-//
-// For normal use, we require that you edit the sketch to replace FILLMEIN
-// with values assigned by the TTN console. However, for regression tests,
-// we want to be able to compile these scripts. The regression tests define
-// COMPILE_REGRESSION_TEST, and in that case we define FILLMEIN to a non-
-// working but innocuous value.
-//
-#ifdef COMPILE_REGRESSION_TEST
-# define FILLMEIN 0
-#else
-# warning "You must replace the values marked FILLMEIN with real values from the TTN control panel!"
-# define FILLMEIN (#dont edit this, edit the lines that use FILLMEIN)
-#endif
+
 
 // LoRaWAN NwkSKey, network session key
 static const PROGMEM u1_t NWKSKEY[16] = { 0x1A, 0x71, 0xFD, 0x1C, 0xFC, 0x99, 0x53, 0x84, 0xE2, 0xCD, 0x7B, 0xEE, 0xBB, 0x7F, 0xE3, 0xF9 };
@@ -100,10 +140,6 @@ static const u4_t DEVADDR = 0x26002FB5; // <-- Change this address for every nod
 void os_getArtEui (u1_t* buf) { }
 void os_getDevEui (u1_t* buf) { }
 void os_getDevKey (u1_t* buf) { }
-
-//static uint8_t mydata[] = "Hello, world!";
-//static uint8_t mydata[16] { 0xB8, 0xA8, 0x5A, 0x5F, 0xD7, 0x00, 0xF2, 0x01, 0x8E, 0x00, 0x08, 0x00, 0x1E, 0x00, 0x00, 0x01 };
-
 
 
 static osjob_t sendjob;
@@ -215,13 +251,15 @@ static int sample = 0;
     } else {
         // Prepare upstream data transmission at the next possible time.
 		sample %= 15;     // loop through test data arrays
-		payload.obsReport.obsReportTime = now();
 		payload.obsReport.tempX10 = observations[0][sample];
 		payload.obsReport.pressX10 = observations[1][sample];
 		payload.obsReport.humidX10 = observations[2][sample];
 		payload.obsReport.rainflX10 = observations[3][sample];
 		payload.obsReport.windspX10 = observations[4][sample];
 		payload.obsReport.windDir = observations[5][sample];
+		payload.obsReport.windGustX10 = observations[4][sample];
+		payload.obsReport.windGustDir = observations[5][sample];
+		payload.obsReport.dailyRainX10 = observations[6][sample];
         LMIC_setTxData2(1, payload.readAccess, sizeof(payload.readAccess), 0);
         Serial.println(F("Packet queued"));
         Serial.print(F("Sending packet on frequency: "));
@@ -232,6 +270,7 @@ static int sample = 0;
 }
 
 void setup() {
+	
 //    pinMode(13, OUTPUT);
     while (!Serial); // wait for Serial to be initialized
     Serial.begin(115200);
