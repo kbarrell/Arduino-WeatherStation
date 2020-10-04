@@ -43,8 +43,8 @@
 
 // Sensor-related definitions
 // Set hardware pin assignments & pre-set constants
-#define TX_Pin 8 				 // used to indicate web data tx
-#define ONE_WIRE_BUS_PIN 29 	    //Data bus pin for DS18B20's
+#define TX_Pin 8 				   // used to indicate web data tx
+#define ONE_WIRE_BUS_PIN 29 	  //Data bus pin for DS18B20's
 
 #define WindSensor_Pin (31)       //The pin location of the anemometer sensor
 #define WindVane_Pin  (A13)       // The pin connecting to the wind vane sensor
@@ -90,7 +90,7 @@ union obsPayload
 {
 	OBSSET	obsReport;
 	uint8_t	readAccess[sizeof(obsSet)];
-}payload;
+}sensorObs[2];
 
 // AU Eastern Time Zone (Sydney, Melbourne)   Use next 3 lines for one time setup to be written to EEPROM
 //TimeChangeRule auEDST = {"AEDT", First, Sun, Oct, 2, 660};    //Daylight time = UTC + 11:00 hours
@@ -129,6 +129,18 @@ static const PROGMEM u1_t NWKSKEY[16] = { 0x1A, 0x71, 0xFD, 0x1C, 0xFC, 0x99, 0x
 // LoRaWAN AppSKey, application session key
 static const u1_t PROGMEM APPSKEY[16] = { 0x14, 0xEE, 0x5D, 0xE6, 0x45, 0xDE, 0x42, 0xA1, 0xA7, 0xAA, 0xF9, 0xAF, 0x36, 0x94, 0x90, 0x6E };
 
+//  Create BME280 object
+BME280_I2C bme;     // I2C using address 0x77
+
+// Setup a oneWire instance to communicate with OneWire devices
+OneWire oneWire(ONE_WIRE_BUS_PIN);
+DallasTemperature DSsensors(&oneWire);    // Pass the OneWire reference to Dallas Temperature lib
+
+// Assign the addresses of the DS18B20 sensors (determined by reading them previously)
+DeviceAddress airTempAddr = { 0x28, 0x1A, 0x30, 0x94, 0x3A, 0x19, 0x01, 0x55 };
+DeviceAddress caseTempAddr = { 0x28, 0xAA, 0x68, 0x93, 0x41, 0x14, 0x01, 0xD8 };
+
+
 // LoRaWAN end-device address (DevAddr)
 // See http://thethingsnetwork.org/wiki/AddressSpace
 // The library converts the address to network byte order as needed.
@@ -146,7 +158,7 @@ static osjob_t sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
-const unsigned TX_INTERVAL = 300 ;
+const unsigned TX_INTERVAL = 300 ;		// 5 min reporting cycle
 
 // Pin mapping
 // TL Modifications:
@@ -250,17 +262,17 @@ static int sample = 0;
         Serial.println(F("OP_TXRXPEND, not sending"));
     } else {
         // Prepare upstream data transmission at the next possible time.
-		sample %= 15;     // loop through test data arrays
-		payload.obsReport.tempX10 = observations[0][sample];
-		payload.obsReport.pressX10 = observations[1][sample];
-		payload.obsReport.humidX10 = observations[2][sample];
-		payload.obsReport.rainflX10 = observations[3][sample];
-		payload.obsReport.windspX10 = observations[4][sample];
-		payload.obsReport.windDir = observations[5][sample];
-		payload.obsReport.windGustX10 = observations[4][sample];
-		payload.obsReport.windGustDir = observations[5][sample];
-		payload.obsReport.dailyRainX10 = observations[6][sample];
-        LMIC_setTxData2(1, payload.readAccess, sizeof(payload.readAccess), 0);
+//		sample %= 15;     // loop through test data arrays
+//		payload.obsReport.tempX10 = observations[0][sample];
+//		payload.obsReport.pressX10 = observations[1][sample];
+//		payload.obsReport.humidX10 = observations[2][sample];
+//		payload.obsReport.rainflX10 = observations[3][sample];
+//		payload.obsReport.windspX10 = observations[4][sample];
+//		payload.obsReport.windDir = observations[5][sample];
+//		payload.obsReport.windGustX10 = observations[4][sample];
+//		payload.obsReport.windGustDir = observations[5][sample];
+//		payload.obsReport.dailyRainX10 = observations[6][sample];
+        LMIC_setTxData2(1, sensorObs[currentObs].readAccess, sizeof(OBSSET), 0);
         Serial.println(F("Packet queued"));
         Serial.print(F("Sending packet on frequency: "));
         Serial.println(LMIC.freq);
@@ -271,23 +283,70 @@ static int sample = 0;
 
 void setup() {
 	
+	txState = HIGH;
+  
+	// prepare obsPayload indices
+	currentObs = 0;
+	reportObs = 1;
+  
+	// setup anemometer values
+	lastDirValue = 0;
+	rotations = 0;
+	isSampleRequired = false;
+	windGust = 0;
+	calGustDirn = 0;
+  
+	// setup RG11 rain totals
+	sampleRainfall = 0;
+	obsReportRainfall = 0;
+	dailyRainfall = 0;
+  
+	// setup timer values
+	timerCount = 0;
+	sampleCount = 0;
+  
+	// Initialise the Temperature measurement library & set sensor resolution to 12 (10) bits
+	DSsensors.setResolution(airTempAddr, 12);
+	DSsensors.setResolution(caseTempAddr, 10);
+ 
+	if (!bme.begin())  {
+      Serial.println("Could not find BME280 sensor -  check wiring");
+     while (1);
+	}
+		
 //    pinMode(13, OUTPUT);
-    while (!Serial); // wait for Serial to be initialized
-    Serial.begin(115200);
-    delay(100);     // per sample code on RF_95 test
-    Serial.println(F("Starting"));
+	while (!Serial); // wait for Serial to be initialized
+	Serial.begin(115200);
+	delay(100);     // per sample code on RF_95 test
+	Serial.println(F("Starting"));
+	
 	setSyncProvider(RTC.get);
 	setSyncInterval(500);     // resync system time to RTC every 500 sec
 
-    #ifdef VCC_ENABLE
-    // For Pinoccio Scout boards
-    pinMode(VCC_ENABLE, OUTPUT);
-    digitalWrite(VCC_ENABLE, HIGH);
-    delay(1000);
-    #endif
+	#ifdef VCC_ENABLE
+	// For Pinoccio Scout boards
+		pinMode(VCC_ENABLE, OUTPUT);
+		digitalWrite(VCC_ENABLE, HIGH);
+		delay(1000);
+	#endif
+	
+  // Setup pins & interrupts	
+	pinMode(TX_Pin, OUTPUT);
+	pinMode(WindSensor_Pin, INPUT);
+	pinMode(RG11_Pin, INPUT);
+	attachInterrupt(digitalPinToInterrupt(WindSensor_Pin), isr_rotation, FALLING);
+	attachInterrupt(digitalPinToInterrupt(RG11_Pin),isr_rg, FALLING);
+
+  //Setup the timer for 0.5s
+	Timer1.initialize(Timing_Clock);     
+	Timer1.attachInterrupt(isr_timer);
+  
+	sei();   // Enable Interrupts
 
     // LMIC init
     os_init();
+	
+	
     // Reset the MAC state. Session and pending data transfers will be discarded.
 //**    Serial.print(F("Max Clock Error\t"));
 //**    Serial.println(MAX_CLOCK_ERROR);
@@ -360,7 +419,16 @@ void setup() {
 }
 
 void loop() {
+	
+	union obsPayload sensorObs[2];  
+
+	DSsensors.requestTemperatures();    // Read temperatures from all DS18B20 devices
+	bme.readSensor();
+	
+	
     unsigned long now;
+	
+	
     now = millis();
     if ((now & 512) != 0) {
       digitalWrite(13, HIGH);
@@ -368,7 +436,126 @@ void loop() {
     else {
       digitalWrite(13, LOW);
     }
+	
+	if(isSampleRequired) {
+	  
+		sampleCount++;
+	
+		getWindDirection();
+		if (windSpeed > windGust) {      // Check last sample of windspeed for new Gust record
+			windGust = windSpeed;
+			calGustDirn = calDirection;
+		}
+	
+		sampleRainfall = tipCount * Bucket_Size;    // update totals with the rainfall for this sample period
+		obsReportRainfall += sampleRainfall;
+		dailyRainfall += sampleRainfall;
+		tipCount = 0;
+	
+	//  Does this sample complete a reporting cycle?   If so, prepare payload.
+		if (sampleCount == Report_Interval) {
+			sensorObs[currentObs].obsReport.windGustX10 = windGust * 10.0;
+			sensorObs[currentObs].obsReport.windGustDir = (windGust > 0) ? calGustDirn : 0;
+			sensorObs[currentObs].obsReport.tempX10 = DSsensors.getTempC(airTempAddr)* 10.0;
+			sensorObs[currentObs].obsReport.humidX10 = bme.getHumidity()*10.0;
+			sensorObs[currentObs].obsReport.pressX10 = bme.getPressure_MB()*10.0;
+			sensorObs[currentObs].obsReport.rainflX10 = obsReportRainfall * 10.0;
+			sensorObs[currentObs].obsReport.windspX10 = windSpeed * 10.0;
+			sensorObs[currentObs].obsReport.windDir =  (windSpeed > 0) ? calDirection : 0;
+			sensorObs[currentObs].obsReport.dailyRainX10 = dailyRainfall * 10.0;
+			
+		//  Do print  i.e. substitute for a send it 
+//		Serial.print("DS18 Air:   ");  Serial.print(sensorObs[currentObs].obsReport.tempX10);  Serial.print(" °C\t");
+//		Serial.print(sensorObs[currentObs].obsReport.humidX10);   Serial.print(" %\t\t");
+//		Serial.print(sensorObs[currentObs].obsReport.pressX10);  Serial.print(" hPa\t");
+//		Serial.print(sensorObs[currentObs].obsReport.rainflX10);  Serial.print(" mm\t\t");
+//		Serial.print(sensorObs[currentObs].obsReport.dailyRainX10);  Serial.print(" mm\t\t");
+//		Serial.print(sensorObs[currentObs].obsReport.windspX10);   Serial.print(" kph\t");
+//		Serial.print(sensorObs[currentObs].obsReport.windDir);   Serial.print("deg.\t");
+//		Serial.print(sensorObs[currentObs].obsReport.windGustX10);   Serial.print(" kph\t");
+//		Serial.print(sensorObs[currentObs].obsReport.windGustDir);   Serial.print("deg.\t");
+//		Serial.print(sensorObs[currentObs].obsReport.dailyRainX10);  Serial.println(" mm\t\t");
+//		printIt(sensorObs[currentObs].readAccess, sizeof(OBSSET));        //  Check dump of 16 Byte obsSet structure
+		
+			sampleCount = 0;
+			currentObs = 1- currentObs;
+			reportObs = 1 - currentObs;   // switch reporting to last collected observation
+			windGust = 0;
+		}
+			
+		isSampleRequired = false;
+	}
+	
       
     os_runloop_once();
     
+}
+
+// Interrupt handler routine for timer interrupt
+void isr_timer() {
+	
+	timerCount++;
+
+	if(timerCount == Sample_Interval) {
+		// convert to km/h using the formula V=P(2.25/T)*1.609 where T = sample interval
+		// i.e. V = P(2.25/2.5)*1.609 = P * Speed_Conversion factor  (=1.4481  for 2.5s interval)
+		windSpeed = rotations * Speed_Conversion; 
+		rotations = 0;   
+		txState = !txState;     
+		digitalWrite(TX_Pin, txState);      // Transmit LED
+		isSampleRequired = true;
+		timerCount = 0;						// Restart the interval count
+	}
+}
+
+// Interrupt handler routine to increment the rotation count for wind speed
+void isr_rotation ()   {
+
+  if ((millis() - contactBounceTime) > BounceInterval ) {  // debounce the switch contact.
+    rotations++;
+    contactBounceTime = millis();
+  }
+}
+
+// Interrrupt handler routine that is triggered when the rg-11 detects rain   
+void isr_rg ()   { 
+
+   if ((millis() - contactTime) > BounceInterval ) {  // debounce of sensor signal
+      tipCount++;
+      contactTime = millis();
+   } 
+} 
+
+// Get Wind Direction
+void getWindDirection() {
+	
+	vaneValue = analogRead(WindVane_Pin);
+	vaneDirection = map(vaneValue, 0, 1023, 0, 359);
+	calDirection = vaneDirection + VaneOffset;
+	
+	if(calDirection > 360)
+		calDirection = calDirection - 360;
+	
+	if(calDirection > 360)
+		calDirection = calDirection - 360;
+}
+
+// Field format utility for printing
+void print2digits(int number)  {
+	if (number >= 0 && number <10) {
+		Serial.write('0');
+	}
+	Serial.print(number);
+}
+
+// Print utility for packed structure
+void printIt(uint8_t *charArray, int length) {
+  int i;
+	char charMember;
+	Serial.print("buff length:"); Serial.println(length);
+	for (i=0; i<length; i++) {
+		charMember = charArray[i];
+		Serial.println(charMember, BIN);
+	}
+	Serial.println("===EndOfBuffer========");
 }
