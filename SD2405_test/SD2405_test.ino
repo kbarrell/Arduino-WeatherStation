@@ -9,23 +9,32 @@
 #include <SD2405RTC.h>
 
 #define RTC_ADDR     0x32
+#define freqHalfHerz  0x0B       // 0.5Hz = 2 sec period
+#define freqQrtrHerz  0x0C		// 0.25 Herz = 4 sec period
 
-tmElements_t tm;
+tmElements_t tm,al;
 const char* days[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 const char* months[] = {"January", "February", "March", "April", "May", "June", "July", "August","September", "October", "November", "December"};
 
 void setup()  {
-  Serial.begin(9600);
+  Serial.begin(115200);
   while (!Serial) delay(10); // wait until Arduino Serial Monitor opens
   i2CReadDate();
   i2CEditTime();
+  Serial.println("Would you like to set the interrupt frequency now? Y/N");
+  while (!Serial.available()) delay(10);
+  if (Serial.read() == 'y' || Serial.read() == 'Y') {
+    RTC.writeFreqInt(freqHalfHerz);
+    RTC.readRegisters(32);
+	Serial.flush();
+  }
 }
 
 void loop()
 {
   i2CReadDate();
   dateTimeDisplay();
-  delay(1000);
+  delay(10000);
 }
 
 //Read the Real-time data from DS1307
@@ -39,6 +48,10 @@ void i2CEditTime(void)
   
   Serial.print("The current date and time is: ");
   dateTimeDisplay();
+  Serial.flush();
+  Serial.println("\nThe RTC Registers contents are:");
+  RTC.readRegisters(32);
+  Serial.flush();
   Serial.println("Please change to newline ending the settings on the lower right of the Serial Monitor");
   Serial.println("Would you like to set the date and time now? Y/N");
  
@@ -50,6 +63,7 @@ void i2CEditTime(void)
     Serial.print("The current date and time is now: ");
     dateTimeDisplay();
   }
+  
 }
 
 // This set of codes is allows input of data
@@ -66,12 +80,12 @@ void i2CSetTime() {
   Serial.println("Please enter the current day of the week, 1-7.");
   Serial.print("1 Sun | 2 Mon | 3 Tues | 4 Weds | 5 Thu | 6 Fri | 7 Sat - ");
   tm.Wday = readByte();
-  Serial.println(days[tm.Wday-1]);
+  Serial.println(days[tm.Wday]-1);
   Serial.print("Please enter the current hour in 24hr format, 0-23. - ");
   tm.Hour = readByte();
   Serial.println(tm.Hour);
   Serial.print("Please enter the current minute, 0-59. - ");
-  tm.Minute = readByte();
+  tm.Minute = readByte();
   Serial.println(tm.Minute);
   Serial.print("Please enter the current second, 0-59. - ");
   tm.Second = readByte();
@@ -82,7 +96,7 @@ void i2CSetTime() {
 }
 
 void dateTimeDisplay(void){
-  Serial.print(days[tm.Wday-1]); //weekday
+  Serial.print(days[tm.Wday]); //weekday
   Serial.print(" ");
   Serial.print(months[tm.Month-1]); //month name
   Serial.print(" ");

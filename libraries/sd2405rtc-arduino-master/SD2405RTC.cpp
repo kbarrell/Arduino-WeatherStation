@@ -168,6 +168,19 @@ void SD2405RTC::writeAlarm(tmElements_t &al, boolean periodic, boolean dateAlarm
   al.Year = y2kYearToTm(al.Year);
 }
 
+// Write interrupt control register for Frequency Interrupt
+void SD2405RTC::writeFreqInt(byte frequency)
+{
+	enableWrite();
+	Wire.beginTransmission(SD2405_ADDR);
+	Wire.write(0x10);				// Set the address for writing as 10H
+	Wire.write(0b10101001);			// 10H WRTC1=1 IM=0 INTS1=1 INTS0=0 FOBAT=1 INTDE=0 INTAE=0 INTFE=1
+	Wire.write(0x0F & frequency); 	// 11H Set low-order bits FS3,FS2,FS1,FS0 to frequency selection
+	Wire.endTransmission();
+	disableWrite(true);
+}
+	
+
 // Print the RTC registers values in differents formats (for debugging purpose).
 void SD2405RTC::readRegisters(int nb)
 {
