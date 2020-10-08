@@ -34,7 +34,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#include "TimerOne.h"     // Timer Interrupt set to 2 sec for read sensors
+//#include "TimerOne.h"     // Timer Interrupt set to 2 sec for read sensors
 #include <math.h>
 #include <Wire.h>         // For accessing RTC
 #include <SD2405RTC.h>    // For Gravity RTC breakout board.   Set RTC to UTC time
@@ -43,20 +43,21 @@
 
 // Sensor-related definitions
 // Set hardware pin assignments & pre-set constants
-#define TX_Pin 8 				   // used to indicate web data tx
+#define TX_Pin 4 				   // used to indicate web data tx
 #define ONE_WIRE_BUS_PIN 29 	  //Data bus pin for DS18B20's
 
-#define WindSensor_Pin (31)       //The pin location of the anemometer sensor
+#define WindSensor_Pin (18)       //The pin location of the anemometer sensor
 #define WindVane_Pin  (A13)       // The pin connecting to the wind vane sensor
 #define VaneOffset  0		   // The anemometer offset from magnetic north
 #define Bucket_Size  0.2 	   // mm bucket capacity to trigger tip count
-#define RG11_Pin  33        		 // Interrupt pin for rain sensor
+#define RG11_Pin  3        		 // Interrupt pin for rain sensor
 #define BounceInterval  15		// Number of ms to allow for debouncing
+#define SampleInt_Pin   19		// Interrupt pin for RTC-generated sampling clock
 
 // Set timer related settings for sensor sampling & calculation
-#define Timing_Clock  500000    //  0.5sec in millis
+#define Timing_Clock  1000000    //  0.5sec in millis
 #define Sample_Interval   5		//  = number of Timing_Clock cycles  i.e. 2.5sec interval
-#define Report_Interval   120    //  = number of sample intervals contributing to each upload report (each 5 min)
+#define Report_Interval   7    //  = number of sample intervals contributing to each upload report (each 5 min)
 #define Speed_Conversion  1.4481   // convert rotations to km/h.  = 2.25/(Sample_Interval x Timing_Clock)* 1.609 
 									// refer Davis anemometer technical spec
 									
@@ -84,11 +85,11 @@ typedef struct obsSet {
 	uint16_t	windspX10;	// observed windspeed (km/h) x10 ~range 0->1200
 	uint16_t	windDir;	// observed wind direction (compass degrees)  range 0->359
 	uint16_t	dailyRainX10; //  accumulated rainfall (mm) X10 for period to 9am daily
- }OBSSET;
+ } obsSet;
 		
 union obsPayload
 {
-	OBSSET	obsReport;
+	obsSet	obsReport;
 	uint8_t	readAccess[sizeof(obsSet)];
 }sensorObs[2];
 
@@ -216,8 +217,8 @@ void onEvent (ev_t ev) {
               Serial.println(F(" bytes of payload"));
             }
             // Schedule next transmission
-            os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
-            break;
+//            os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
+			break;
         case EV_LOST_TSYNC:
             Serial.println(F("EV_LOST_TSYNC"));
             break;
@@ -256,7 +257,7 @@ void onEvent (ev_t ev) {
 
 void do_send(osjob_t* j){
 
-static int sample = 0;
+//static int sample = 0;
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) {
         Serial.println(F("OP_TXRXPEND, not sending"));
@@ -272,19 +273,32 @@ static int sample = 0;
 //		payload.obsReport.windGustX10 = observations[4][sample];
 //		payload.obsReport.windGustDir = observations[5][sample];
 //		payload.obsReport.dailyRainX10 = observations[6][sample];
-        LMIC_setTxData2(1, sensorObs[currentObs].readAccess, sizeof(OBSSET), 0);
+//cli();
+//        LMIC_setTxData2(1, sensorObs[reportObs].readAccess, sizeof(obsSet), 0);
         Serial.println(F("Packet queued"));
+		Serial.print(currentObs);Serial.print(F("\t")); Serial.println(sensorObs[reportObs].obsReport.humidX10);
         Serial.print(F("Sending packet on frequency: "));
         Serial.println(LMIC.freq);
-		sample += 1;
+//		sei();
+//		sample += 1;
     }
     // Next TX is scheduled after TX_COMPLETE event.
 }
 
 void setup() {
 	
+	while (!Serial); // wait for Serial to be initialized
+	Serial.begin(115200);
+	delay(200);     // per sample code on RF_95 test
+	Serial.println(F("Starting")); Serial.flush();
+
+
+	
+//	setSyncProvider(RTC.get);
+//	setSyncInterval(500);     // resync system time to RTC every 500 sec
+
 	txState = HIGH;
-  
+
 	// prepare obsPayload indices
 	currentObs = 0;
 	reportObs = 1;
@@ -304,6 +318,7 @@ void setup() {
 	// setup timer values
 	timerCount = 0;
 	sampleCount = 0;
+	
   
 	// Initialise the Temperature measurement library & set sensor resolution to 12 (10) bits
 	DSsensors.setResolution(airTempAddr, 12);
@@ -313,16 +328,8 @@ void setup() {
       Serial.println("Could not find BME280 sensor -  check wiring");
      while (1);
 	}
-		
-//    pinMode(13, OUTPUT);
-	while (!Serial); // wait for Serial to be initialized
-	Serial.begin(115200);
-	delay(100);     // per sample code on RF_95 test
-	Serial.println(F("Starting"));
-	
-	setSyncProvider(RTC.get);
-	setSyncInterval(500);     // resync system time to RTC every 500 sec
 
+	
 	#ifdef VCC_ENABLE
 	// For Pinoccio Scout boards
 		pinMode(VCC_ENABLE, OUTPUT);
@@ -334,24 +341,24 @@ void setup() {
 	pinMode(TX_Pin, OUTPUT);
 	pinMode(WindSensor_Pin, INPUT);
 	pinMode(RG11_Pin, INPUT);
+	pinMode(SampleInt_Pin, INPUT_PULLUP);
 	attachInterrupt(digitalPinToInterrupt(WindSensor_Pin), isr_rotation, FALLING);
 	attachInterrupt(digitalPinToInterrupt(RG11_Pin),isr_rg, FALLING);
-
-  //Setup the timer for 0.5s
-	Timer1.initialize(Timing_Clock);     
-	Timer1.attachInterrupt(isr_timer);
-  
-	sei();   // Enable Interrupts
-
+	attachInterrupt(digitalPinToInterrupt(SampleInt_Pin), isr_timer, FALLING);
+Serial.println(F("attached interrupts")); Serial.flush();
+  		stop();  /////*****
+   
     // LMIC init
     os_init();
-	
-	
+Serial.println(F("returned from os_init"));
+	stop();  /////*****
+		
     // Reset the MAC state. Session and pending data transfers will be discarded.
 //**    Serial.print(F("Max Clock Error\t"));
 //**    Serial.println(MAX_CLOCK_ERROR);
 //**    LMIC_setClockError(MAX_CLOCK_ERROR * 20/100);   //**
     LMIC_reset();
+
 
     // Set static session parameters. Instead of dynamically establishing a session
     // by joining the network, precomputed session parameters are be provided.
@@ -413,35 +420,31 @@ void setup() {
 
     // Set data rate and transmit power for uplink (note: txpow seems to be ignored by the library)
     LMIC_setDrTxpow(DR_SF7,14);
-
+  Serial.println(F("ready to do_send"));
     // Start job
     do_send(&sendjob);
+	
+	  //Setup the timer for 0.5s
+//	Timer1.initialize(Timing_Clock);     
+//	Timer1.attachInterrupt(isr_timer);
+	
+	Serial.println(F("enabling interrupts"));  
+	sei();   // Enable Interrupts
+	
 }
 
 void loop() {
-	
-	union obsPayload sensorObs[2];  
 
 	DSsensors.requestTemperatures();    // Read temperatures from all DS18B20 devices
 	bme.readSensor();
 	
 	
-    unsigned long now;
-	
-	
-    now = millis();
-    if ((now & 512) != 0) {
-      digitalWrite(13, HIGH);
-    }
-    else {
-      digitalWrite(13, LOW);
-    }
-	
 	if(isSampleRequired) {
 	  
 		sampleCount++;
-	
+	Serial.print(sampleCount);   Serial.print(F("\t= sample\t"));  Serial.print(currentObs); Serial.print(reportObs);
 		getWindDirection();
+		Serial.print(F("\t")); Serial.print(windSpeed);  Serial.print(F("\t"));  Serial.println(calDirection);
 		if (windSpeed > windGust) {      // Check last sample of windspeed for new Gust record
 			windGust = windSpeed;
 			calGustDirn = calDirection;
@@ -451,9 +454,10 @@ void loop() {
 		obsReportRainfall += sampleRainfall;
 		dailyRainfall += sampleRainfall;
 		tipCount = 0;
-	
+
 	//  Does this sample complete a reporting cycle?   If so, prepare payload.
 		if (sampleCount == Report_Interval) {
+			cli();
 			sensorObs[currentObs].obsReport.windGustX10 = windGust * 10.0;
 			sensorObs[currentObs].obsReport.windGustDir = (windGust > 0) ? calGustDirn : 0;
 			sensorObs[currentObs].obsReport.tempX10 = DSsensors.getTempC(airTempAddr)* 10.0;
@@ -465,22 +469,23 @@ void loop() {
 			sensorObs[currentObs].obsReport.dailyRainX10 = dailyRainfall * 10.0;
 			
 		//  Do print  i.e. substitute for a send it 
-//		Serial.print("DS18 Air:   ");  Serial.print(sensorObs[currentObs].obsReport.tempX10);  Serial.print(" °C\t");
-//		Serial.print(sensorObs[currentObs].obsReport.humidX10);   Serial.print(" %\t\t");
-//		Serial.print(sensorObs[currentObs].obsReport.pressX10);  Serial.print(" hPa\t");
-//		Serial.print(sensorObs[currentObs].obsReport.rainflX10);  Serial.print(" mm\t\t");
-//		Serial.print(sensorObs[currentObs].obsReport.dailyRainX10);  Serial.print(" mm\t\t");
-//		Serial.print(sensorObs[currentObs].obsReport.windspX10);   Serial.print(" kph\t");
-//		Serial.print(sensorObs[currentObs].obsReport.windDir);   Serial.print("deg.\t");
-//		Serial.print(sensorObs[currentObs].obsReport.windGustX10);   Serial.print(" kph\t");
-//		Serial.print(sensorObs[currentObs].obsReport.windGustDir);   Serial.print("deg.\t");
-//		Serial.print(sensorObs[currentObs].obsReport.dailyRainX10);  Serial.println(" mm\t\t");
-//		printIt(sensorObs[currentObs].readAccess, sizeof(OBSSET));        //  Check dump of 16 Byte obsSet structure
+		Serial.print("DS18 Air:   ");  Serial.print(sensorObs[currentObs].obsReport.tempX10);  Serial.print(" °C\t");
+		Serial.print(sensorObs[currentObs].obsReport.humidX10);   Serial.print(" %\t\t");
+		Serial.print(sensorObs[currentObs].obsReport.pressX10);  Serial.print(" hPa\t");
+		Serial.print(sensorObs[currentObs].obsReport.rainflX10);  Serial.print(" mm\t\t");
+		Serial.print(sensorObs[currentObs].obsReport.dailyRainX10);  Serial.print(" mm\t\t");
+		Serial.print(sensorObs[currentObs].obsReport.windspX10);   Serial.print(" kph\t");
+		Serial.print(sensorObs[currentObs].obsReport.windDir);   Serial.print("deg.\t");
+		Serial.print(sensorObs[currentObs].obsReport.windGustX10);   Serial.print(" kph\t");
+		Serial.print(sensorObs[currentObs].obsReport.windGustDir);   Serial.print("deg.\t");
+		Serial.print(sensorObs[currentObs].obsReport.dailyRainX10);  Serial.println(" mm\t\t");
+//		printIt(sensorObs[currentObs].readAccess, sizeof(obsSet));        //  Check dump of 16 Byte obsSet structure
 		
 			sampleCount = 0;
 			currentObs = 1- currentObs;
 			reportObs = 1 - currentObs;   // switch reporting to last collected observation
 			windGust = 0;
+			sei();
 		}
 			
 		isSampleRequired = false;
@@ -497,6 +502,7 @@ void isr_timer() {
 	timerCount++;
 
 	if(timerCount == Sample_Interval) {
+		cli();
 		// convert to km/h using the formula V=P(2.25/T)*1.609 where T = sample interval
 		// i.e. V = P(2.25/2.5)*1.609 = P * Speed_Conversion factor  (=1.4481  for 2.5s interval)
 		windSpeed = rotations * Speed_Conversion; 
@@ -505,6 +511,7 @@ void isr_timer() {
 		digitalWrite(TX_Pin, txState);      // Transmit LED
 		isSampleRequired = true;
 		timerCount = 0;						// Restart the interval count
+		sei();
 	}
 }
 
@@ -558,4 +565,9 @@ void printIt(uint8_t *charArray, int length) {
 		Serial.println(charMember, BIN);
 	}
 	Serial.println("===EndOfBuffer========");
+}
+
+// Debugging utility
+void stop() {
+	while(1);
 }

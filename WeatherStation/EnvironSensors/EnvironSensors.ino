@@ -9,7 +9,7 @@
 #include <TimeLib.h>      // For epoch time en/decode
 
 // Set hardware pin assignments & pre-set constants
-#define TX_Pin 8 				 // used to indicate web data tx
+#define TX_Pin 13 				 // used to indicate web data tx
 #define ONE_WIRE_BUS_PIN 9 	    //Data bus pin for DS18B20's
 
 #define WindSensor_Pin (2)       //The pin location of the anemometer sensor
@@ -22,7 +22,7 @@
 // Set timer related settings for sensor sampling & calculation
 #define Timing_Clock  500000    //  0.5sec in millis
 #define Sample_Interval   5		//  = number of Timing_Clock cycles  i.e. 2.5sec interval
-#define Report_Interval   6   //  = number of sample intervals contributing to each upload report (each 5 min)
+#define Report_Interval   12   //  = number of sample intervals contributing to each upload report (each 5 min)
 #define Speed_Conversion  1.4481   // convert rotations to km/h.  = 2.25/(Sample_Interval x Timing_Clock)* 1.609 
 									// refer Davis anemometer technical spec
 									
@@ -108,7 +108,7 @@ void setup() {
   DSsensors.setResolution(caseTempAddr, 10);
  
 
-  Serial.begin(9600);
+  Serial.begin(115200);
   while (!Serial);      //wait for serial
   delay(200);
   
