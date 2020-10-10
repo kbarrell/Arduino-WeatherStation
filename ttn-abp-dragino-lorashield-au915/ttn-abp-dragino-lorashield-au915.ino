@@ -86,6 +86,7 @@ typedef struct obsSet {
 	uint16_t	windspX10;	// observed windspeed (km/h) x10 ~range 0->1200
 	uint16_t	windDir;	// observed wind direction (compass degrees)  range 0->359
 	uint16_t	dailyRainX10; //  accumulated rainfall (mm) X10 for period to 9am daily
+	uint16_t	casetempX10;		// station case temperature (for alarming)
  } obsSet;
 		
 union obsPayload
@@ -103,7 +104,7 @@ union obsPayload
 // lines above and uncomment the line below.
 Timezone auEastern(100);       // assumes rules stored at EEPROM address 100 & that RTC set to UTC
 TimeChangeRule *tcr;		// pointer to the timechange rule
-time_t utc, local;
+time_t utc, localTime;
 boolean	dailyTotalsDue;		// flags that totals for 24hr to 9am local are to be reported & reset
 
 int  currentObs, reportObs;   //References which obsPayload [0 or 1]is being filled vs. reported 
@@ -150,6 +151,7 @@ static osjob_t sendjob;
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
 const unsigned TX_INTERVAL = 300 ;		// 5 min reporting cycle
+const int EOD_HOUR = 9;			// Daily totals are reset at 9am (local);
 
 // Pin mapping
 // TL Modifications:
@@ -437,7 +439,8 @@ void loop() {
 			sensorObs[currentObs].obsReport.windspX10 = windSpeed * 10.0;
 			sensorObs[currentObs].obsReport.windDir =  (windSpeed > 0) ? calDirection : 0;
 			sensorObs[currentObs].obsReport.dailyRainX10 = dailyRainfall * 10.0;
-			
+			sensorObs[currentObs].obsReport.casetempX10 = (DSsensors.getTempC(caseTempAddr)+ 100.0) * 10.0;
+			
 		//  Do print  i.e. substitute for a send it 
 		Serial.print("DS18 Air:   ");  Serial.print(sensorObs[currentObs].obsReport.tempX10);  Serial.print(" °C\t");
 		Serial.print(sensorObs[currentObs].obsReport.humidX10);   Serial.print(" %\t\t");
@@ -448,13 +451,20 @@ void loop() {
 		Serial.print(sensorObs[currentObs].obsReport.windDir);   Serial.print("deg.\t");
 		Serial.print(sensorObs[currentObs].obsReport.windGustX10);   Serial.print(" kph\t");
 		Serial.print(sensorObs[currentObs].obsReport.windGustDir);   Serial.print("deg.\t");
-		Serial.print(sensorObs[currentObs].obsReport.dailyRainX10);  Serial.println(" mm\t\t");
+		Serial.print(sensorObs[currentObs].obsReport.dailyRainX10);  Serial.print(" mm\t\t");
+		Serial.print(sensorObs[currentObs].obsReport.casetempX10);   Serial.println(" °C\t");
 //		printIt(sensorObs[currentObs].readAccess, sizeof(obsSet));        //  Check dump of 16 Byte obsSet structure
 		
 			sampleCount = 0;
-			currentObs = 1- currentObs;
-			reportObs = 1 - currentObs;   // switch reporting to last collected observation
-			windGust = 0;
+			currentObs = 1- currentObs;		//
+			reportObs = 1 - currentObs;   	// switch reporting to last collected observation
+			windGust = 0;					// Gust reading is reset for every reporting period
+			
+		// Check if this report completes a daily cycle
+			utc = now();
+			localTime = auEastern.toLocal(utc, &tcr);
+			if (resetDaily(localTime, EOD_HOUR - 1, EOD_HOUR + 1) )
+				dailyRainfall = 0;		// Next report cycle starts daily total from 0mm
 		}
 			
 		isSampleRequired = false;
@@ -520,6 +530,32 @@ void print2digits(int number)  {
 	}
 	Serial.print(number);
 }
+
+// Check if a report is the last of a daily sequence.  Relies on window open +/- 1hr 
+//  either side of EOD_HOUR
+boolean resetDaily(time_t localTime, int windowOpensHr, int windowClosesHr) {
+	int checkHour = hour(localTime);
+	if ((checkHour < windowOpensHr) || (checkHour >= windowClosesHr)) {
+		dailyTotalsDue = true;
+		return false; 		// Outside the reset time window
+	}
+	if (dailyTotalsDue) {
+		if (checkHour == EOD_HOUR) {
+			dailyTotalsDue = false;
+			return true;
+		}
+		if (minute(localTime) + TX_INTERVAL/60 < 60 ) {
+			dailyTotalsDue = true;
+			return false;    // Next report will still be ahead of EOD_HOUR
+		}
+		else {
+			dailyTotalsDue = false;
+			return true;	//  Next report period should start from zero daily totals
+		}
+	}
+	else return false;
+}
+				
 
 // Print utility for packed structure
 void printIt(uint8_t *charArray, int length) {
