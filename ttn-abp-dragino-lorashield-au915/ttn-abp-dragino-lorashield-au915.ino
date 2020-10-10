@@ -208,7 +208,7 @@ void onEvent (ev_t ev) {
               Serial.println(LMIC.dataLen);
               Serial.println(F(" bytes of payload"));
             }
-            // Schedule next transmission
+            // Schedule next transmission - changed to schedule in loop(), to stay in sync with sensors
 //            os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
 			break;
         case EV_LOST_TSYNC:
@@ -255,7 +255,6 @@ void do_send(osjob_t* j){
         // Prepare upstream data transmission at the next possible time.
         LMIC_setTxData2(1, sensorObs[reportObs].readAccess, sizeof(obsSet), 0);     // Use the last completed set of obs
         Serial.println(F("Packet queued"));
-		Serial.print(currentObs);Serial.print(F("\t")); Serial.println(sensorObs[reportObs].obsReport.humidX10);
         Serial.print(F("Sending packet on frequency: "));
         Serial.println(LMIC.freq);
     }
