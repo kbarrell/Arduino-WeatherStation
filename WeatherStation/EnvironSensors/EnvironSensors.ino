@@ -110,7 +110,7 @@ void setup() {
 
   Serial.begin(115200);
   while (!Serial);      //wait for serial
-  delay(200);
+  delay(500);
   
   Serial.println(" Weather Station DS18B20, BME280, RG11, Davis Sensor Test");
   Serial.println("DS Temp\t\tBME Temp2\tHumidity\t\tPressure\tRainfall\tSpeed\tDirection");

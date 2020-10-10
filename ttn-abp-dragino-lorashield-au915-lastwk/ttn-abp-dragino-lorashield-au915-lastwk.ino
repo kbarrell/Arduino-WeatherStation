@@ -235,7 +235,7 @@ void setup() {
 //    pinMode(13, OUTPUT);
     while (!Serial); // wait for Serial to be initialized
     Serial.begin(115200);
-    delay(100);     // per sample code on RF_95 test
+    delay(500);     // per sample code on RF_95 test
     Serial.println(F("Starting"));
 	setSyncProvider(RTC.get);
 	setSyncInterval(500);     // resync system time to RTC every 500 sec
@@ -321,14 +321,14 @@ void setup() {
 }
 
 void loop() {
-    unsigned long now;
-    now = millis();
-    if ((now & 512) != 0) {
-      digitalWrite(13, HIGH);
-    }
-    else {
-      digitalWrite(13, LOW);
-    }
+//    unsigned long now;
+//    now = millis();
+//    if ((now & 512) != 0) {
+//      digitalWrite(13, HIGH);
+//    }
+//    else {
+//      digitalWrite(13, LOW);
+//    }
       
     os_runloop_once();
     
