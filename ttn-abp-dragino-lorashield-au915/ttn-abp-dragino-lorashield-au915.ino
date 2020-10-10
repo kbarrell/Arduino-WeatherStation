@@ -209,7 +209,7 @@ void onEvent (ev_t ev) {
               Serial.println(F(" bytes of payload"));
             }
             // Schedule next transmission
-            os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
+//            os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
 			break;
         case EV_LOST_TSYNC:
             Serial.println(F("EV_LOST_TSYNC"));
@@ -276,6 +276,7 @@ void setup() {
 	// prepare obsPayload selection indices
 	currentObs = 0;
 	reportObs = 1;
+	dailyTotalsDue = true;
   
 	// setup anemometer values
 	lastDirValue = 0;
@@ -413,10 +414,8 @@ void loop() {
 		sampleCount++;
 		DSsensors.requestTemperatures();    // Read temperatures from all DS18B20 devices
 		bme.readSensor();					// Read humidity & barometric pressure
-	Serial.print(sampleCount);   Serial.print(F("\t= sample\t"));  Serial.print(currentObs); Serial.print(reportObs);
 	
 		getWindDirection();
-		Serial.print(F("\t")); Serial.print(windSpeed);  Serial.print(F("\t"));  Serial.println(calDirection);
 		
 		if (windSpeed > windGust) {      // Check last sample of windspeed for new Gust record
 			windGust = windSpeed;
@@ -442,18 +441,21 @@ void loop() {
 			sensorObs[currentObs].obsReport.casetempX10 = (DSsensors.getTempC(caseTempAddr)+ 100.0) * 10.0;
 			
 		//  Do print  i.e. substitute for a send it 
-		Serial.print("DS18 Air:   ");  Serial.print(sensorObs[currentObs].obsReport.tempX10);  Serial.print(" °C\t");
-		Serial.print(sensorObs[currentObs].obsReport.humidX10);   Serial.print(" %\t\t");
-		Serial.print(sensorObs[currentObs].obsReport.pressX10);  Serial.print(" hPa\t");
-		Serial.print(sensorObs[currentObs].obsReport.rainflX10);  Serial.print(" mm\t\t");
-		Serial.print(sensorObs[currentObs].obsReport.dailyRainX10);  Serial.print(" mm\t\t");
-		Serial.print(sensorObs[currentObs].obsReport.windspX10);   Serial.print(" kph\t");
-		Serial.print(sensorObs[currentObs].obsReport.windDir);   Serial.print("deg.\t");
-		Serial.print(sensorObs[currentObs].obsReport.windGustX10);   Serial.print(" kph\t");
-		Serial.print(sensorObs[currentObs].obsReport.windGustDir);   Serial.print("deg.\t");
-		Serial.print(sensorObs[currentObs].obsReport.dailyRainX10);  Serial.print(" mm\t\t");
-		Serial.print(sensorObs[currentObs].obsReport.casetempX10);   Serial.println(" °C\t");
+//		Serial.print("DS18 Air:   ");  Serial.print(sensorObs[currentObs].obsReport.tempX10);  Serial.print(" °C\t");
+//		Serial.print(sensorObs[currentObs].obsReport.humidX10);   Serial.print(" %\t\t");
+//		Serial.print(sensorObs[currentObs].obsReport.pressX10);  Serial.print(" hPa\t");
+//		Serial.print(sensorObs[currentObs].obsReport.rainflX10);  Serial.print(" mm\t\t");
+//		Serial.print(sensorObs[currentObs].obsReport.dailyRainX10);  Serial.print(" mm\t\t");
+//		Serial.print(sensorObs[currentObs].obsReport.windspX10);   Serial.print(" kph\t");
+//		Serial.print(sensorObs[currentObs].obsReport.windDir);   Serial.print("deg.\t");
+//		Serial.print(sensorObs[currentObs].obsReport.windGustX10);   Serial.print(" kph\t");
+//		Serial.print(sensorObs[currentObs].obsReport.windGustDir);   Serial.print("deg.\t");
+//		Serial.print(sensorObs[currentObs].obsReport.dailyRainX10);  Serial.print(" mm\t\t");
+//		Serial.print(sensorObs[currentObs].obsReport.casetempX10);   Serial.println(" °C\t");
 //		printIt(sensorObs[currentObs].readAccess, sizeof(obsSet));        //  Check dump of 16 Byte obsSet structure
+
+        //  Schedule Callback to transmit the report
+			os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL/10), do_send);
 		
 			sampleCount = 0;
 			currentObs = 1- currentObs;		//
