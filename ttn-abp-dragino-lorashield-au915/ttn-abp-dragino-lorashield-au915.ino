@@ -72,7 +72,7 @@ volatile float windSpeed, windGust;        // speed in km per hour
 volatile unsigned long tipCount;  	 	// rain bucket tipcounter used in interrupt routine
 volatile unsigned long contactTime; 	// timer to manage contact bounce in interrupt routine
 volatile float sampleRainfall;       	// total amount of rainfall recorded in sample period (2.5s)
-volatile float obsReportRainfall;    	// total amount of rainfall in the reporting period  (5 min)
+volatile float obsReportRainfallRate;    	// total amount of rainfall in the reporting period  (5 min)
 volatile float dailyRainfall;			//  total amount of rainfall in 24 hrs to 9am (local time)
 
 // Define structures for handling reporting via TTN
@@ -286,7 +286,7 @@ void setup() {
   
 	// setup RG11 rain totals
 	sampleRainfall = 0;
-	obsReportRainfall = 0;
+	obsReportRainfallRate = 0;
 	dailyRainfall = 0;
   
 	// setup timer values
@@ -422,8 +422,9 @@ void loop() {
 		}
 	
 		sampleRainfall = tipCount * Bucket_Size;    // update totals with the rainfall for this sample period
-		obsReportRainfall += sampleRainfall;
+		obsReportRainfallRate = sampleRainfall*3600/(Report_Interval * Sample_Interval * (Timing_Clock/1000));   // mm/hr
 		dailyRainfall += sampleRainfall;
+		sampleRainfall = 0;
 		tipCount = 0;
 
 	//  Does this sample complete a reporting cycle?   If so, prepare payload.
@@ -433,12 +434,13 @@ void loop() {
 			sensorObs[currentObs].obsReport.tempX10 = (DSsensors.getTempC(airTempAddr)+ 100.0)* 10.0;
 			sensorObs[currentObs].obsReport.humidX10 = bme.getHumidity()*10.0;
 			sensorObs[currentObs].obsReport.pressX10 = bme.getPressure_MB()*10.0;
-			sensorObs[currentObs].obsReport.rainflX10 = obsReportRainfall * 10.0;
+			sensorObs[currentObs].obsReport.rainflX10 = obsReportRainfallRate * 10.0;
 			sensorObs[currentObs].obsReport.windspX10 = windSpeed * 10.0;
 			sensorObs[currentObs].obsReport.windDir =  (windSpeed > 0) ? calDirection : 0;
 			sensorObs[currentObs].obsReport.dailyRainX10 = dailyRainfall * 10.0;
 			sensorObs[currentObs].obsReport.casetempX10 = (DSsensors.getTempC(caseTempAddr)+ 100.0) * 10.0;
-			
+			
+
 		//  Do print  i.e. substitute for a send it 
 //		Serial.print("DS18 Air:   ");  Serial.print(sensorObs[currentObs].obsReport.tempX10);  Serial.print(" °C\t");
 //		Serial.print(sensorObs[currentObs].obsReport.humidX10);   Serial.print(" %\t\t");
