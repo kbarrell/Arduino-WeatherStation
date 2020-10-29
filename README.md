@@ -1,5 +1,5 @@
 # Arduino-WeatherStation
-Arduino-based weather station and web reporting via TTN to TagoIO.     ** Not yet complete **
+Arduino-based weather station and web reporting via TTN to TagoIO.    
 
 This project expands on a multi-sensor weather station design originally published at http://cactus.io/projects/weather/arduino-weather-station. Rather than the Ethernet-based backhaul of that original design, this current integration adopts LoRaWAN radio technology to web-connect the weather station via The Things Network (TTN) https://www.thethingsnetwork.org. 
 
