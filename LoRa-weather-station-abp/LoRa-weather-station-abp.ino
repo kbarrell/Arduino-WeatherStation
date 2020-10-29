@@ -79,9 +79,10 @@ volatile float windSpeed, windGust;        // speed in km per hour
 
 volatile unsigned long tipCount;  	 	// rain bucket tipcounter used in interrupt routine
 volatile unsigned long contactTime; 	// timer to manage contact bounce in interrupt routine
-volatile float sampleRainfall;       	// total amount of rainfall recorded in sample period (2.5s)
+volatile unsigned long obsRainfallCount; // total count of rainfall tips recorded in observatoin period (5min)
 volatile float obsReportRainfallRate;    	// total amount of rainfall in the reporting period  (5 min)
-volatile float dailyRainfall;			//  total amount of rainfall in 24 hrs to 9am (local time)
+volatile unsigned long dailyRainfallCount;	//  total count of rainfall tips in 24 hrs to 9am (local time)
+const float reportIntervalSec = Report_Interval * Sample_Interval * float(Timing_Clock) / 1000000;
 
 // Define structures for handling reporting via TTN
 typedef struct obsSet {
@@ -116,7 +117,6 @@ time_t utc, localTime;
 boolean	dailyTotalsDue;		// flags that totals for 24hr to 9am local are to be reported & reset
 
 int  currentObs, reportObs;   //References which obsPayload [0 or 1]is being filled vs. reported 
-bool txState;				// current LED state for tx rx LED
 int vaneValue;         	 	//  raw analog value from wind vane
 int vaneDirection;          //  translated 0-360 direction
 int calDirection, calGustDirn;     	//  converted value with offset applied
@@ -216,7 +216,8 @@ void onEvent (ev_t ev) {
               Serial.println(LMIC.dataLen);
               Serial.println(F(" bytes of payload"));
             }
-            // Schedule next transmission - changed to schedule in loop(), to stay in sync with sensors
+			digitalWrite(TX_Pin, LOW);		// Tx/Rx LED off
+            // Schedule next transmission - move next line to schedule in loop(), to stay in sync with sensors
 //            os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
 			break;
         case EV_LOST_TSYNC:
@@ -245,6 +246,7 @@ void onEvent (ev_t ev) {
         */
         case EV_TXSTART:
             Serial.println(F("EV_TXSTART"));
+			digitalWrite(TX_Pin, HIGH);		//  Tx/Rx LED ON for external visual
             break;
 			
         default:
@@ -278,7 +280,6 @@ void setup() {
 	setSyncProvider(RTC.get);
 	setSyncInterval(500);     // resync system time to RTC every 500 sec
 
-	txState = HIGH;
 
 	// prepare obsPayload selection indices
 	currentObs = 0;
@@ -292,10 +293,10 @@ void setup() {
 	windGust = 0;
 	calGustDirn = 0;
   
-	// setup RG11 rain totals
-	sampleRainfall = 0;
-	obsReportRainfallRate = 0;
-	dailyRainfall = 0;
+	// setup RG11 rain totals & conversion factor
+	obsRainfallCount = 0;
+	obsReportRainfallRate = 0.0;
+	dailyRainfallCount = 0;
   
 	// setup timer values
 	timerCount = 0;
@@ -342,9 +343,6 @@ void setup() {
     os_init();
 		
     // Reset the MAC state. Session and pending data transfers will be discarded.
-//**    Serial.print(F("Max Clock Error\t"));
-//**    Serial.println(MAX_CLOCK_ERROR);
-//**    LMIC_setClockError(MAX_CLOCK_ERROR * 20/100);   //**
     LMIC_reset();
 
     // Set static session parameters. Instead of dynamically establishing a session
@@ -428,15 +426,13 @@ void loop() {
 			windGust = windSpeed;
 			calGustDirn = calDirection;
 		}
-	
-		sampleRainfall = tipCount * Bucket_Size;    // update totals with the rainfall for this sample period
-		obsReportRainfallRate = sampleRainfall*3600/(Report_Interval * Sample_Interval * (Timing_Clock/1000));   // mm/hr
-		dailyRainfall += sampleRainfall;
-		sampleRainfall = 0;
-		tipCount = 0;
+			
 
 	//  Does this sample complete a reporting cycle?   If so, prepare payload.
 		if (sampleCount == Report_Interval) {
+			obsRainfallCount = tipCount - dailyRainfallCount;
+			dailyRainfallCount = tipCount;
+			obsReportRainfallRate = obsRainfallCount * Bucket_Size * 3600 / reportIntervalSec;   //  mm/hr
 			sensorObs[currentObs].obsReport.windGustX10 = windGust * 10.0;
 			sensorObs[currentObs].obsReport.windGustDir = (windGust > 0) ? calGustDirn : 0;
 			sensorObs[currentObs].obsReport.tempX10 = (DSsensors.getTempC(airTempAddr)+ 100.0)* 10.0;
@@ -445,7 +441,7 @@ void loop() {
 			sensorObs[currentObs].obsReport.rainflX10 = obsReportRainfallRate * 10.0;
 			sensorObs[currentObs].obsReport.windspX10 = windSpeed * 10.0;
 			sensorObs[currentObs].obsReport.windDir =  (windSpeed > 0) ? calDirection : 0;
-			sensorObs[currentObs].obsReport.dailyRainX10 = dailyRainfall * 10.0;
+			sensorObs[currentObs].obsReport.dailyRainX10 = dailyRainfallCount * Bucket_Size * 10.0;
 			sensorObs[currentObs].obsReport.casetempX10 = (DSsensors.getTempC(caseTempAddr)+ 100.0) * 10.0;
 			
 
@@ -460,8 +456,11 @@ void loop() {
 		// Check if this report completes a daily cycle
 			utc = now();
 			localTime = auEastern.toLocal(utc, &tcr);
-			if (resetDaily(localTime, EOD_HOUR - 1, EOD_HOUR + 1) )
-				dailyRainfall = 0;		// Next report cycle starts daily total from 0mm
+			if (resetDaily(localTime, EOD_HOUR - 1, EOD_HOUR + 1) ){
+				tipCount = 0;
+				dailyRainfallCount = 0;     // Next report cycle starts daily total from 0mm
+				obsRainfallCount = 0;
+			}
 		}
 			
 		isSampleRequired = false;
@@ -481,8 +480,6 @@ void isr_timer() {
 		// i.e. V = P(2.25/2.5)*1.609 = P * Speed_Conversion factor  (=1.4481  for 2.5s interval)
 		windSpeed = rotations * Speed_Conversion; 
 		rotations = 0;   
-		txState = !txState;     
-		digitalWrite(TX_Pin, txState);      // Transmit LED
 		isSampleRequired = true;
 		timerCount = 0;						// Restart the interval count
 	}
@@ -541,7 +538,7 @@ boolean resetDaily(time_t localTime, int windowOpensHr, int windowClosesHr) {
 			dailyTotalsDue = false;
 			return true;
 		}
-		if (minute(localTime) + TX_INTERVAL/60 < 60 ) {
+		if ((minute(localTime) + TX_INTERVAL/60) < 60 ) {
 			dailyTotalsDue = true;
 			return false;    // Next report will still be ahead of EOD_HOUR
 		}
