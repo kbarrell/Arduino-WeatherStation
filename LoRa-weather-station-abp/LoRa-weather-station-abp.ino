@@ -120,7 +120,10 @@ int  currentObs, reportObs;   //References which obsPayload [0 or 1]is being fil
 int vaneValue;         	 	//  raw analog value from wind vane
 int vaneDirection;          //  translated 0-360 direction
 int calDirection, calGustDirn;     	//  converted value with offset applied
-int lastDirValue;          //  last direction value
+const int count = 4;				// average the last 4 wind directions
+int boxcar[count];					// stack of wind direction values for averaging calculation
+const bool BaseRange = true;
+const bool ExtdRange = false;
 
 
 // LoRaWAN NwkSKey, network session key  -   Insert your own
@@ -286,8 +289,7 @@ void setup() {
 	reportObs = 1;
 	dailyTotalsDue = true;
   
-	// setup anemometer values
-	lastDirValue = 0;
+	// initialise anemometer values
 	rotations = 0;
 	isSampleRequired = false;
 	windGust = 0;
@@ -420,7 +422,7 @@ void loop() {
 		DSsensors.requestTemperatures();    // Read temperatures from all DS18B20 devices
 		bme.readSensor();					// Read humidity & barometric pressure
 	
-		getWindDirection();
+		getWindDirection(BaseRange);			//  Read dirn in range 0 - 360 deg.
 		
 		if (windSpeed > windGust) {      // Check last sample of windspeed for new Gust record
 			windGust = windSpeed;
@@ -432,15 +434,17 @@ void loop() {
 		if (sampleCount == Report_Interval) {
 			obsRainfallCount = tipCount - dailyRainfallCount;
 			dailyRainfallCount = tipCount;
+			getWindDirection(ExtdRange);	// Update direction to reflect recent average in {-90 to 450 deg}
+			
 			obsReportRainfallRate = obsRainfallCount * Bucket_Size * 3600 / reportIntervalSec;   //  mm/hr
 			sensorObs[currentObs].obsReport.windGustX10 = windGust * 10.0;
-			sensorObs[currentObs].obsReport.windGustDir = (windGust > 0) ? calGustDirn : 0;
+			sensorObs[currentObs].obsReport.windGustDir = calGustDirn;
 			sensorObs[currentObs].obsReport.tempX10 = (DSsensors.getTempC(airTempAddr)+ 100.0)* 10.0;
 			sensorObs[currentObs].obsReport.humidX10 = bme.getHumidity()*10.0;
 			sensorObs[currentObs].obsReport.pressX10 = bme.getPressure_MB()*10.0;
 			sensorObs[currentObs].obsReport.rainflX10 = obsReportRainfallRate * 10.0;
 			sensorObs[currentObs].obsReport.windspX10 = windSpeed * 10.0;
-			sensorObs[currentObs].obsReport.windDir =  (windSpeed > 0) ? calDirection : 0;
+			sensorObs[currentObs].obsReport.windDir =  calDirection +90;   // NB: Offset caters for extended range -90 to 450
 			sensorObs[currentObs].obsReport.dailyRainX10 = dailyRainfallCount * Bucket_Size * 10.0;
 			sensorObs[currentObs].obsReport.casetempX10 = (DSsensors.getTempC(caseTempAddr)+ 100.0) * 10.0;
 			
@@ -452,6 +456,7 @@ void loop() {
 			currentObs = 1- currentObs;		//
 			reportObs = 1 - currentObs;   	// switch reporting to last collected observation
 			windGust = 0;					// Gust reading is reset for every reporting period
+		
 			
 		// Check if this report completes a daily cycle
 			utc = now();
@@ -504,18 +509,49 @@ void isr_rg ()   {
 } 
 
 // Get Wind Direction
-void getWindDirection() {
+void getWindDirection(bool baseRange) {
+	static int recentAvgDirn = 0;		// average of last 3 adjusted measurements
+	int altReading, deltaAsRead, deltaExtd;		// candidate alternative to raw direction measurement
 	
-	vaneValue = analogRead(WindVane_Pin);
-	vaneDirection = map(vaneValue, 0, 1023, 0, 359);
-	calDirection = vaneDirection + VaneOffset;
+	if (baseRange) {		// take a reading in standard 0-360 deg. range
+		vaneValue = analogRead(WindVane_Pin);
+		vaneDirection = map(vaneValue, 0, 1023, 0, 359);
+		calDirection = vaneDirection + VaneOffset;
+		if(calDirection > 360)
+			calDirection = calDirection - 360;
+		return;			// returns value via calDirection
+	}   
 	
-	if(calDirection > 360)
-		calDirection = calDirection - 360;
+	// Here (baseRange is FALSE) we find if +/- 360 gives a reading closer to the most recent wind direction
+	// Does not take a new direction reading - uses the last one 
+	// This averaging is only invoked for directions included in the 5 min reports
+	if (calDirection > 270) altReading	= calDirection - 360;
+	else if (calDirection < 90) altReading = calDirection + 360;
+	else altReading = calDirection;
 	
-	if(calDirection > 360)
-		calDirection = calDirection - 360;
+	deltaAsRead = abs(calDirection - recentAvgDirn);
+	deltaExtd = abs(altReading - recentAvgDirn);
+	calDirection = (deltaAsRead < deltaExtd) ? calDirection : altReading;
+	
+	// Update the average etc
+	recentAvgDirn = average(calDirection);
 }
+
+//  Calculate average of 'count' readings using boxcar method
+int average(int value)
+{
+  static int i;
+  static long sum=0;
+
+  sum -= boxcar[i];  //remove oldest value from sum
+  boxcar[i] = value;  // add new value to array
+  sum += boxcar[i]; // add new value to sum
+
+  i++;
+  if (i == count) i=0;
+  return sum/count;
+}
+
 
 // Field format utility for printing
 void print2digits(int number)  {
