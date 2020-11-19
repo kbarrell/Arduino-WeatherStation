@@ -49,7 +49,7 @@ if (normalDir > 360) {
   normalDir = normalDir -360;
 }
 if (normalDir < 349) {
-  index = Math.round((windDir.value)/22.5);
+  index = Math.round((normalDir)/22.5);
 }
 
 //  Add the mapping point variables to the decoded payload output
